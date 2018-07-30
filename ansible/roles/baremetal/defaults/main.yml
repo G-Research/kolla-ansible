@@ -84,8 +84,10 @@ debian_pkg_install:
  - python-setuptools
  - ntp
 
+install_epel: true
+
 redhat_pkg_install:
- - epel-release
+ - "{% if install_epel | bool %}epel-release{% endif %}"
  - "{{ docker_yum_package }}"
  - git
  - python-setuptools
