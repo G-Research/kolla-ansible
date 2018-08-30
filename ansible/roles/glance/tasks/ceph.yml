@@ -34,6 +34,7 @@
           key = {{ cephx_key.keyring.key }}
     dest: "{{ node_config_directory }}/glance-api/ceph.client.glance.keyring"
     mode: "0600"
+    decrypt: yes
   become: true
   when: inventory_hostname in groups['glance-api']
 
