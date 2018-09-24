@@ -109,3 +109,10 @@ keystone_git_repository: "{{ kolla_dev_repos_git }}/{{ project_name }}"
 keystone_dev_repos_pull: "{{ kolla_dev_repos_pull }}"
 keystone_dev_mode: "{{ kolla_dev_mode }}"
 keystone_source_version: "{{ kolla_source_version }}"
+
+####################
+# MySQL update
+####################
+keystone_sql_cmd_protocol: "{{ 'http' if keystone_enable_internal_tls == True else 'https' }}"
+keystone_sql_cmd_internal_vip: "\"use {{ keystone_database_name }}; UPDATE endpoint SET url='{{ keystone_internal_url }}' WHERE url LIKE '{{ keystone_sql_cmd_protocol }}://{{ kolla_internal_fqdn }}:{{ keystone_public_port }}'\""
+keystone_sql_cmd_admin_vip: "\"use {{ keystone_database_name }}; UPDATE endpoint SET url='{{ keystone_admin_url }}' WHERE url LIKE '{{ keystone_sql_cmd_protocol }}://{{ kolla_internal_fqdn }}:{{ keystone_admin_port }}'\""

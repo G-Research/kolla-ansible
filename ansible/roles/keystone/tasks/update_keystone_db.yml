@@ -1,0 +1,22 @@
+---
+- name: Update Keystone endpoint in MySQL database for {{ kolla_internal_fqdn }}:{{ keystone_public_port }}
+  command: "docker exec kolla_toolbox mysql -h {{ database_address }} -P {{ database_port }} -u {{ keystone_database_user }} -p{{ keystone_database_password }} -e {{ keystone_sql_cmd_internal_vip }}"
+  register: keystone_sql_cmd_internal
+  changed_when: keystone_sql_cmd_internal | success
+  failed_when:
+    - keystone_sql_cmd_internal.rc != 0
+  run_once: True
+
+- name: Update Keystone endpoint in MySQL database for {{ kolla_internal_fqdn }}:{{ keystone_admin_port }}
+  command: "docker exec kolla_toolbox mysql -h {{ database_address }} -P {{ database_port }} -u {{ keystone_database_user }} -p{{ keystone_database_password }} -e {{ keystone_sql_cmd_admin_vip }}"
+  register: keystone_sql_cmd_admin
+  changed_when: keystone_sql_cmd_admin | success
+  failed_when:
+    - keystone_sql_cmd_admin.rc != 0
+  run_once: True
+
+- name: Restart Keystone and Memcached containers
+  command: "docker restart {{ item }}"
+  with_items:
+    - keystone
+    - memcached
