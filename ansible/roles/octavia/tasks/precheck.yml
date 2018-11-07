@@ -35,6 +35,8 @@
   failed_when: not result.stat.exists
   when: inventory_hostname in groups['octavia-worker']
   with_items:
-    - cakey.pem
-    - ca_01.pem
-    - client.pem
+    - server_ca.cert.pem
+    - server_ca.key.pem
+    - client_ca.cert.pem
+    - client.cert-key.pem
+
