@@ -39,3 +39,8 @@ elasticsearch_tag: "{{ openstack_release }}"
 elasticsearch_image_full: "{{ elasticsearch_image }}:{{ elasticsearch_tag }}"
 
 elasticsearch_dimensions: "{{ default_container_dimensions }}"
+
+# Number of times to attempt a synced flush during an upgrade.
+# The synced flush can fail with a HTTP 409 Conflict if indexing operations are
+# occurring concurrently.
+elasticsearch_synced_flush_retries: 12

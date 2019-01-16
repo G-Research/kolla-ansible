@@ -12,13 +12,19 @@
   delegate_to: "{{ groups['elasticsearch'][0] }}"
   run_once: true
 
+# The synced flush can fail with a HTTP 409 Conflict if indexing operations are
+# occurring concurrently. Retry the operation.
 - name: Perform a synced flush
   uri:
     url: "{{ internal_protocol }}://{{ kolla_internal_vip_address }}:{{ elasticsearch_port }}/_flush/synced"
     method: POST
-    status_code: 200
+    status_code: 200, 409
     return_content: yes
     body_format: json
+  register: response
+  until: response.status == 200
+  retries: "{{ elasticsearch_synced_flush_retries }}"
+  delay: 10
   delegate_to: "{{ groups['elasticsearch'][0] }}"
   run_once: true
   retries: 10
