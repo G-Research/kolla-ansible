@@ -38,7 +38,7 @@ Configure Designate options in ``/etc/kolla/globals.yml``
    designate_backend: "bind9"
    designate_ns_record: "sample.openstack.org"
 
-For integration with Infoblox the following variables are also required.
+For integration with Infoblox, the following variables are required:
 
 Configure Designate options in ``/etc/kolla/globals.yml``
 
@@ -46,7 +46,7 @@ Configure Designate options in ``/etc/kolla/globals.yml``
 
     designate_backend_infoblox_nameservers: "192.168.1.1,192.168.1.2"
     designate_infoblox_host: "192.168.1.1"
-    designate_infoblox_wapi_url: "https://192.168.1.1/wapi/v2.1/"
+    designate_infoblox_wapi_url: "https://infoblox.example.com/wapi/v2.1/"
     designate_infoblox_auth_username: "username"
     designate_infoblox_ns_group: "INFOBLOX"
 
