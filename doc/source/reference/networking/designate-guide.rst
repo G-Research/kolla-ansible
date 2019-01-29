@@ -14,7 +14,7 @@ Designate provides DNSaaS services for OpenStack:
 -  Integrated with Keystone for authentication
 -  Framework in place to integrate with Nova and Neutron
    notifications (for auto-generated records)
--  Support for PowerDNS and Bind9 out of the box
+-  Support for PowerDNS, Bind9 and Infoblox out of the box
 
 Configuration on Kolla deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -37,6 +37,28 @@ Configure Designate options in ``/etc/kolla/globals.yml``
    dns_interface: "eth1"
    designate_backend: "bind9"
    designate_ns_record: "sample.openstack.org"
+
+For integration with Infoblox the following variables are also required.
+
+Configure Designate options in ``/etc/kolla/globals.yml``
+
+.. code-block:: yaml
+
+    designate_backend_infoblox_nameservers: "192.168.1.1,192.168.1.2"
+    designate_infoblox_host: "192.168.1.1"
+    designate_infoblox_wapi_url: "https://192.168.1.1/wapi/v2.1/"
+    designate_infoblox_auth_username: "username"
+    designate_infoblox_ns_group: "INFOBLOX"
+
+Configure Designate options in ``/etc/kolla/passwords.yml``
+
+.. code-block:: yaml
+
+    designate_infoblox_auth_password: "password"
+
+For more information about how the Infoblox backend works, see
+`Infoblox backend
+<https://docs.openstack.org/designate/latest/admin/backends/infoblox.html>`__.
 
 Neutron and Nova Integration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
