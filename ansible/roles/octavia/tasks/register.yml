@@ -55,3 +55,31 @@
       cacert: "{{ openstack_cacert }}"
   run_once: True
   with_items: "{{ octavia_required_roles }}"
+
+- name: Creating the Octavia lb project, user, and role
+  kolla_toolbox:
+    module_name: "kolla_keystone_user"
+    module_args:
+      project: "{{ octavia_project_name }}"
+      user: "{{ octavia_keystone_user }}"
+      password: "{{ octavia_keystone_password }}"
+      role: "admin"
+      region_name: "{{ openstack_region_name }}"
+      auth: "{{ openstack_octavia_auth }}"
+      endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
+  run_once: True
+  when: octavia_project_name != openstack_auth.project_name
+
+- name: Adding octavia user into lb project
+  kolla_toolbox:
+    module_name: "os_user_role"
+    module_args:
+      user: "{{ octavia_keystone_user }}"
+      role: admin
+      project: "{{ octavia_project_name }}"
+      auth: "{{ openstack_octavia_auth }}"
+      endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
+  run_once: True
+  when: octavia_project_name != openstack_auth.project_name

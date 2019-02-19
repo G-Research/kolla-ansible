@@ -110,3 +110,4 @@ octavia_logging_debug: "{{ openstack_logging_debug }}"
 octavia_keystone_user: "octavia"
 
 openstack_octavia_auth: "{{ openstack_auth }}"
+octavia_project_name: "{{ openstack_auth.project_name }}"
