@@ -37,21 +37,21 @@ with the same physical network name in this example:
    [ml2_type_flat]
    flat_networks = sriovtenant1
 
-Add ``PciPassthroughFilter`` to scheduler_default_filters
+Add ``PciPassthroughFilter`` to enabled_filters
 
 The ``PciPassthroughFilter``, which is required by Nova Scheduler service
-on the Controller, should be added to ``scheduler_default_filters``
+on the Controller, should be added to ``enabled_filters``
 
 Modify the ``/etc/kolla/config/nova.conf`` file and add
-``PciPassthroughFilter`` to ``scheduler_default_filters``. this filter is
+``PciPassthroughFilter`` to ``enabled_filters``. this filter is
 required by The Nova Scheduler service on the controller node.
 
 .. path /etc/kolla/config/nova.conf
 .. code-block:: ini
 
-   [DEFAULT]
-   scheduler_default_filters = <existing filters>, PciPassthroughFilter
-   scheduler_available_filters = nova.scheduler.filters.all_filters
+   [filter_scheduler]
+   enabled_filters = <existing filters>, PciPassthroughFilter
+   available_filters = nova.scheduler.filters.all_filters
 
 Edit the ``/etc/kolla/config/nova.conf`` file and add PCI device whitelisting.
 this is needed by OpenStack Compute service(s) on the Compute.
@@ -165,7 +165,8 @@ dmesg on the compute node where the instance was placed.
    [ 2896.850028] ixgbe 0000:05:00.0: Setting VLAN 1000, QOS 0x0 on VF 3
    [ 2897.403367] vfio-pci 0000:05:10.4: enabling device (0000 -> 0002)
 
-For more information see `OpenStack SRIOV documentation <https://docs.openstack.org/neutron/pike/admin/config-sriov.html>`_.
+For more information see `OpenStack SRIOV documentation
+<https://docs.openstack.org/neutron/latest/admin/config-sriov.html>`_.
 
 Nova SRIOV
 ~~~~~~~~~~
@@ -192,9 +193,9 @@ Compute service on the compute node also require the ``alias`` option under the
 .. path /etc/kolla/config/nova.conf
 .. code-block:: ini
 
-   [DEFAULT]
-   scheduler_default_filters = <existing filters>, PciPassthroughFilter
-   scheduler_available_filters = nova.scheduler.filters.all_filters
+   [filter_scheduler]
+   enabled_filters = <existing filters>, PciPassthroughFilter
+   available_filters = nova.scheduler.filters.all_filters
 
    [pci]
    passthrough_whitelist = [{"vendor_id": "8086", "product_id": "10fb"}]
@@ -221,4 +222,5 @@ Start a new instance using the flavor:
 Verify VF devices were created and the instance starts successfully as in
 the Neutron SRIOV case.
 
-For more information see `OpenStack PCI passthrough documentation <https://docs.openstack.org/nova/pike/admin/pci-passthrough.html>`_.
+For more information see `OpenStack PCI passthrough documentation
+<https://docs.openstack.org/nova/latest/admin/pci-passthrough.html>`_.

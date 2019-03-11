@@ -19,11 +19,13 @@ cinder_services:
         mode: "http"
         external: false
         port: "{{ cinder_api_port }}"
+        listen_port: "{{ cinder_api_listen_port }}"
       cinder_api_external:
         enabled: "{{ enable_cinder }}"
         mode: "http"
         external: true
         port: "{{ cinder_api_port }}"
+        listen_port: "{{ cinder_api_listen_port }}"
   cinder-scheduler:
     container_name: cinder_scheduler
     group: cinder-scheduler
@@ -50,7 +52,7 @@ cinder_services:
       - "/run/:/run/:shared"
       - "cinder:/var/lib/cinder"
       - "{% if enable_iscsid | bool %}iscsi_info:/etc/iscsi{% endif %}"
-      - "{% if enable_cinder_backend_lvm | bool and cinder_iscsi_helper == 'lioadm' %}target_config:/etc/target{% endif %}"
+      - "{% if enable_cinder_backend_lvm | bool and cinder_target_helper == 'lioadm' %}target_config:/etc/target{% endif %}"
       - "kolla_logs:/var/log/kolla/"
       - "{{ kolla_dev_repos_directory ~ '/cinder/cinder:/var/lib/kolla/venv/lib/python2.7/site-packages/cinder' if cinder_dev_mode | bool else '' }}"
     dimensions: "{{ cinder_volume_dimensions }}"
@@ -153,12 +155,12 @@ cinder_volume_dimensions: "{{ default_container_dimensions }}"
 ####################
 # OpenStack
 ####################
-cinder_v2_admin_endpoint: "{{ admin_protocol }}://{{ kolla_internal_fqdn }}:{{ cinder_api_port }}/v2/%(tenant_id)s"
-cinder_v2_internal_endpoint: "{{ internal_protocol }}://{{ kolla_internal_fqdn }}:{{ cinder_api_port }}/v2/%(tenant_id)s"
-cinder_v2_public_endpoint: "{{ public_protocol }}://{{ kolla_external_fqdn }}:{{ cinder_api_port }}/v2/%(tenant_id)s"
-cinder_v3_admin_endpoint: "{{ admin_protocol }}://{{ kolla_internal_fqdn }}:{{ cinder_api_port }}/v3/%(tenant_id)s"
-cinder_v3_internal_endpoint: "{{ internal_protocol }}://{{ kolla_internal_fqdn }}:{{ cinder_api_port }}/v3/%(tenant_id)s"
-cinder_v3_public_endpoint: "{{ public_protocol }}://{{ kolla_external_fqdn }}:{{ cinder_api_port }}/v3/%(tenant_id)s"
+cinder_v2_admin_endpoint: "{{ admin_protocol }}://{{ cinder_internal_fqdn }}:{{ cinder_api_port }}/v2/%(tenant_id)s"
+cinder_v2_internal_endpoint: "{{ internal_protocol }}://{{ cinder_internal_fqdn }}:{{ cinder_api_port }}/v2/%(tenant_id)s"
+cinder_v2_public_endpoint: "{{ public_protocol }}://{{ cinder_external_fqdn }}:{{ cinder_api_port }}/v2/%(tenant_id)s"
+cinder_v3_admin_endpoint: "{{ admin_protocol }}://{{ cinder_internal_fqdn }}:{{ cinder_api_port }}/v3/%(tenant_id)s"
+cinder_v3_internal_endpoint: "{{ internal_protocol }}://{{ cinder_internal_fqdn }}:{{ cinder_api_port }}/v3/%(tenant_id)s"
+cinder_v3_public_endpoint: "{{ public_protocol }}://{{ cinder_external_fqdn }}:{{ cinder_api_port }}/v3/%(tenant_id)s"
 
 cinder_logging_debug: "{{ openstack_logging_debug }}"
 
@@ -187,6 +189,8 @@ cinder_backends:
     enabled: "{{ enable_cinder_backend_zfssa_iscsi | bool }}"
   - name: "QuobyteHD"
     enabled: "{{ enable_cinder_backend_quobyte | bool }}"
+
+skip_cinder_backend_check: False
 
 cinder_enabled_backends: "{{ cinder_backends|selectattr('enabled', 'equalto', true)|list }}"
 

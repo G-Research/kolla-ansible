@@ -6,10 +6,10 @@ log_file = /var/log/kolla/glance/glance-api.log
 use_forwarded_for = true
 
 bind_host = {{ api_interface_address }}
-bind_port = {{ glance_api_port }}
+bind_port = {{ glance_api_listen_port }}
 workers = {{ openstack_service_workers }}
 
-registry_host = {{ kolla_internal_fqdn }}
+registry_host = {{ glance_internal_fqdn }}
 
 {% if glance_backend_ceph | bool %}
 show_multiple_locations = True
@@ -29,8 +29,8 @@ connection = mysql+pymysql://{{ glance_database_user }}:{{ glance_database_passw
 max_retries = -1
 
 [keystone_authtoken]
-www_authenticate_uri = {{ internal_protocol }}://{{ kolla_internal_fqdn }}:{{ keystone_public_port }}
-auth_url = {{ admin_protocol }}://{{ kolla_internal_fqdn }}:{{ keystone_admin_port }}
+www_authenticate_uri = {{ keystone_internal_url }}
+auth_url = {{ keystone_admin_url }}
 auth_type = password
 project_domain_id = {{ default_project_domain_id }}
 user_domain_id = {{ default_user_domain_id }}

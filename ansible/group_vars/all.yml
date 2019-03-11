@@ -133,6 +133,7 @@ keepalived_virtual_router_id: "51"
 # Elasticsearch Options
 #######################
 es_heap_size: "1G"
+elasticsearch_datadir_volume: "elasticsearch"
 
 ###################
 # Messaging options
@@ -185,11 +186,17 @@ neutron_ipam_driver: "internal"
 # The list should be in alphabetical order
 aodh_api_port: "8042"
 
+barbican_internal_fqdn: "{{ kolla_internal_fqdn }}"
+barbican_external_fqdn: "{{ kolla_external_fqdn }}"
 barbican_api_port: "9311"
+barbican_api_listen_port: "{{ barbican_api_port }}"
 
 blazar_api_port: "1234"
 
+cinder_internal_fqdn: "{{ kolla_internal_fqdn }}"
+cinder_external_fqdn: "{{ kolla_external_fqdn }}"
 cinder_api_port: "8776"
+cinder_api_listen_port: "{{ cinder_api_port }}"
 
 congress_api_port: "1789"
 
@@ -197,9 +204,12 @@ cloudkitty_api_port: "8889"
 
 collectd_udp_port: "25826"
 
+designate_internal_fqdn: "{{ kolla_internal_fqdn }}"
+designate_external_fqdn: "{{ kolla_external_fqdn }}"
 designate_api_port: "9001"
+designate_api_listen_port: "{{ designate_api_port }}"
 designate_bind_port: "53"
-designate_mdns_port: "5354"
+designate_mdns_port: "{{ '53' if designate_backend == 'infoblox' else '5354' }}"
 designate_rndc_port: "953"
 
 elasticsearch_port: "9200"
@@ -211,7 +221,10 @@ fluentd_syslog_port: "5140"
 
 freezer_api_port: "9090"
 
+glance_internal_fqdn: "{{ kolla_internal_fqdn }}"
+glance_external_fqdn: "{{ kolla_external_fqdn }}"
 glance_api_port: "9292"
+glance_api_listen_port: "{{ glance_api_port }}"
 
 gnocchi_api_port: "8041"
 
@@ -239,7 +252,9 @@ kafka_port: "9092"
 karbor_api_port: "8799"
 
 keystone_public_port: "5000"
+keystone_public_listen_port: "{{ keystone_public_port }}"
 keystone_admin_port: "35357"
+keystone_admin_listen_port: "{{ keystone_admin_port }}"
 keystone_ssh_port: "8023"
 
 kibana_server_port: "5601"
@@ -270,15 +285,31 @@ mongodb_web_port: "28017"
 
 murano_api_port: "8082"
 
+neutron_internal_fqdn: "{{ kolla_internal_fqdn }}"
+neutron_external_fqdn: "{{ kolla_external_fqdn }}"
 neutron_server_port: "9696"
+neutron_server_listen_port: "{{ neutron_server_port }}"
 
+nova_internal_fqdn: "{{ kolla_internal_fqdn }}"
+nova_external_fqdn: "{{ kolla_external_fqdn }}"
 nova_api_port: "8774"
+nova_api_listen_port: "{{ nova_api_port }}"
 nova_metadata_port: "8775"
+nova_metadata_listen_port: "{{ nova_metadata_port }}"
+nova_novncproxy_fqdn: "{{ kolla_external_fqdn }}"
 nova_novncproxy_port: "6080"
+nova_novncproxy_listen_port: "{{ nova_novncproxy_port }}"
+nova_spicehtml5proxy_fqdn: "{{ kolla_external_fqdn }}"
 nova_spicehtml5proxy_port: "6082"
+nova_spicehtml5proxy_listen_port: "{{ nova_spicehtml5proxy_port }}"
+nova_serialproxy_fqdn: "{{ kolla_external_fqdn }}"
 nova_serialproxy_port: "6083"
+nova_serialproxy_listen_port: "{{ nova_serialproxy_port }}"
 
+octavia_internal_fqdn: "{{ kolla_internal_fqdn }}"
+octavia_external_fqdn: "{{ kolla_external_fqdn }}"
 octavia_api_port: "9876"
+octavia_api_listen_port: "{{ octavia_api_port }}"
 octavia_health_manager_port: "5555"
 
 outward_rabbitmq_port: "5674"
@@ -290,7 +321,10 @@ ovsdb_port: "6640"
 
 panko_api_port: "8977"
 
+placement_internal_fqdn: "{{ kolla_internal_fqdn }}"
+placement_external_fqdn: "{{ kolla_external_fqdn }}"
 placement_api_port: "8780"
+placement_api_listen_port: "{{ placement_api_port }}"
 
 prometheus_port: "9091"
 prometheus_node_exporter_port: "9100"
@@ -304,6 +338,10 @@ prometheus_cadvisor_port: "18080"
 # Prometheus alertmanager ports
 prometheus_alertmanager_port: "9093"
 prometheus_alertmanager_cluster_port: "9094"
+
+# Prometheus openstack-exporter ports
+prometheus_openstack_exporter_port: "9198"
+
 qdrouterd_port: "31459"
 
 rabbitmq_port: "5672"
@@ -322,7 +360,10 @@ sahara_api_port: "8386"
 
 searchlight_api_port: "9393"
 
+senlin_internal_fqdn: "{{ kolla_internal_fqdn }}"
+senlin_external_fqdn: "{{ kolla_external_fqdn }}"
 senlin_api_port: "8778"
+senlin_api_listen_port: "{{ senlin_api_port }}"
 
 skydive_analyzer_port: "8085"
 skydive_agents_port: "8090"
@@ -339,7 +380,10 @@ storm_worker_port_range:
   start: 6700
   end: 6703
 
+swift_internal_fqdn: "{{ kolla_internal_fqdn }}"
+swift_external_fqdn: "{{ kolla_external_fqdn }}"
 swift_proxy_server_port: "8080"
+swift_proxy_server_listen_port: "{{ swift_proxy_server_port }}"
 swift_object_server_port: "6000"
 swift_account_server_port: "6001"
 swift_container_server_port: "6002"
@@ -413,16 +457,20 @@ nova_console: "novnc"
 # Valid options are [ public, internal, admin ]
 openstack_interface: "admin"
 
+# Enable core OpenStack services. This includes:
+# glance, keystone, neutron, nova, heat, and horizon.
+enable_openstack_core: "yes"
+
 # These roles are required for Kolla to be operation, however a savvy deployer
 # could disable some of these required roles and run their own services.
-enable_glance: "yes"
+enable_glance: "{{ enable_openstack_core | bool }}"
 enable_haproxy: "yes"
 enable_keepalived: "{{ enable_haproxy | bool }}"
-enable_keystone: "yes"
+enable_keystone: "{{ enable_openstack_core | bool }}"
 enable_mariadb: "yes"
 enable_memcached: "yes"
-enable_neutron: "yes"
-enable_nova: "yes"
+enable_neutron: "{{ enable_openstack_core | bool }}"
+enable_nova: "{{ enable_openstack_core | bool }}"
 enable_rabbitmq: "{{ 'yes' if om_rpc_transport == 'rabbit' or om_notify_transport == 'rabbit' else 'no' }}"
 enable_outward_rabbitmq: "{{ enable_murano | bool }}"
 
@@ -462,8 +510,8 @@ enable_fluentd: "yes"
 enable_freezer: "no"
 enable_gnocchi: "no"
 enable_grafana: "no"
-enable_heat: "yes"
-enable_horizon: "yes"
+enable_heat: "{{ enable_openstack_core | bool }}"
+enable_horizon: "{{ enable_openstack_core | bool }}"
 enable_horizon_blazar: "{{ enable_blazar | bool }}"
 enable_horizon_cloudkitty: "{{ enable_cloudkitty | bool }}"
 enable_horizon_congress: "{{ enable_congress | bool }}"
@@ -528,7 +576,7 @@ enable_nova_ssh: "yes"
 enable_octavia: "no"
 enable_onos: "no"
 enable_opendaylight: "no"
-enable_openvswitch: "{{ neutron_plugin_agent != 'linuxbridge' }}"
+enable_openvswitch: "{{ enable_neutron | bool and neutron_plugin_agent != 'linuxbridge' }}"
 enable_ovs_dpdk: "no"
 enable_osprofiler: "no"
 enable_panko: "no"
@@ -649,9 +697,11 @@ kibana_log_prefix: "flog"
 ####################
 # Keystone options
 ####################
-keystone_admin_url: "{{ admin_protocol }}://{{ kolla_internal_fqdn }}:{{ keystone_admin_port }}"
-keystone_internal_url: "{{ internal_protocol }}://{{ kolla_internal_fqdn }}:{{ keystone_public_port }}"
-keystone_public_url: "{{ public_protocol }}://{{ kolla_external_fqdn }}:{{ keystone_public_port }}"
+keystone_internal_fqdn: "{{ kolla_internal_fqdn }}"
+keystone_external_fqdn: "{{ kolla_external_fqdn }}"
+keystone_admin_url: "{{ admin_protocol }}://{{ keystone_internal_fqdn }}:{{ keystone_admin_port }}"
+keystone_internal_url: "{{ internal_protocol }}://{{ keystone_internal_fqdn }}:{{ keystone_public_port }}"
+keystone_public_url: "{{ public_protocol }}://{{ keystone_external_fqdn }}:{{ keystone_public_port }}"
 
 keystone_admin_user: "admin"
 keystone_admin_project: "admin"
@@ -671,7 +721,7 @@ keystone_default_user_role: "_member_"
 # OpenStack authentication string. You should only need to override these if you
 # are changing the admin tenant/project or user.
 openstack_auth:
-  auth_url: "{{ admin_protocol }}://{{ kolla_internal_fqdn }}:{{ keystone_admin_port }}"
+  auth_url: "{{ keystone_admin_url }}"
   username: "{{ keystone_admin_user }}"
   password: "{{ keystone_admin_password }}"
   project_name: "{{ keystone_admin_project }}"
@@ -726,7 +776,10 @@ gnocchi_metric_datadir_volume: "gnocchi"
 cinder_backend_ceph: "{{ enable_ceph }}"
 cinder_backend_vmwarevc_vmdk: "no"
 cinder_volume_group: "cinder-volumes"
+# DEPRECATED: Use 'cinder_target_helper' instead. This option will be removed
+# in the Train release.
 cinder_iscsi_helper: "tgtadm"
+cinder_target_helper: "{{ cinder_iscsi_helper }}"
 
 # Valid options are [ nfs, swift, ceph ]
 cinder_backup_driver: "ceph"
@@ -742,7 +795,7 @@ cloudkitty_collector_backend: "gnocchi"
 #######################
 # Designate options
 #######################
-# Valid options are [ bind9 ]
+# Valid options are [ bind9, infoblox ]
 designate_backend: "bind9"
 designate_ns_record: "sample.openstack.org"
 designate_backend_external: "no"
@@ -924,7 +977,10 @@ enable_prometheus_memcached_exporter: "{{ enable_memcached | bool }}"
 enable_prometheus_cadvisor: "{{ enable_prometheus | bool }}"
 enable_prometheus_alertmanager: "{{ enable_prometheus | bool }}"
 enable_prometheus_ceph_mgr_exporter: "{{ enable_ceph | bool and enable_prometheus | bool }}"
+enable_prometheus_openstack_exporter: "{{ enable_prometheus | bool }}"
+
 prometheus_alertmanager_user: "admin"
+prometheus_openstack_exporter_interval: "60s"
 
 ############
 # Vitrage

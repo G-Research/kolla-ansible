@@ -1,4 +1,6 @@
 listeners=PLAINTEXT://{{ api_interface_address }}:{{ kafka_port }}
+controlled.shutdown.enable=true
+auto.leader.rebalance.enable=true
 num.network.threads=3
 num.io.threads=8
 socket.send.buffer.bytes=102400
@@ -16,3 +18,7 @@ log.segment.bytes=1073741824
 log.retention.check.interval.ms=300000
 zookeeper.connect={{ kafka_zookeeper }}
 zookeeper.connection.timeout.ms=6000
+{% if enable_monasca | bool %}
+log.message.format.version=0.9.0.0
+connections.max.idle.ms=31540000000
+{% endif %}
