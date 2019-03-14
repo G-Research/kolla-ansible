@@ -4,32 +4,32 @@
         {
             "source": "{{ container_config_directory }}/glance-api.conf",
             "dest": "/etc/glance/glance-api.conf",
-            "owner": "glance",
-            "perm": "0600"
+            "owner": "root:glance",
+            "perm": "0640"
         }{% if glance_policy_file is defined %},
         {
             "source": "{{ container_config_directory }}/{{ glance_policy_file }}",
             "dest": "/etc/glance/{{ glance_policy_file }}",
-            "owner": "glance",
-            "perm": "0600"
+            "owner": "root:glance",
+            "perm": "0640"
         }{% endif %}{% if glance_backend_ceph | bool %},
         {
             "source": "{{ container_config_directory }}/ceph.*",
             "dest": "/etc/ceph/",
-            "owner": "glance",
-            "perm": "0700"
+            "owner": "root:glance",
+            "perm": "0750"
         }{% endif %}{% if glance_backend_swift | bool %},
         {
             "source": "{{ container_config_directory }}/glance-swift.conf",
             "dest": "/etc/glance/glance-swift.conf",
-            "owner": "glance",
-            "perm": "0600"
+            "owner": "root:glance",
+            "perm": "0640"
         }{% endif %}{% if enable_glance_image_cache | bool %},
         {
             "source": "{{ container_config_directory }}/glance-cache.conf",
             "dest": "/etc/glance/glance-cache.conf",
-            "owner": "glance",
-            "perm": "0600"
+            "owner": "root:glance",
+            "perm": "0640"
         }{% endif %}
     ],
     "permissions": [
@@ -42,6 +42,11 @@
             "path": "/var/log/kolla/glance",
             "owner": "glance:glance",
             "recurse": true
+        },
+        {
+            "path": "/etc/glance/rootwrap.conf",
+            "owner": "root:glance",
+            "perm": "0640"
         }
     ]
 }

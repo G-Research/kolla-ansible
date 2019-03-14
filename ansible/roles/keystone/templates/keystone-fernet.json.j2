@@ -5,8 +5,8 @@
     "config_files": [{
             "source": "{{ container_config_directory }}/keystone.conf",
             "dest": "/etc/keystone/keystone.conf",
-            "owner": "keystone",
-            "perm": "0600"
+            "owner": "root:keystone",
+            "perm": "0640"
         },
         {
             "source": "{{ container_config_directory }}/crontab",
@@ -41,8 +41,8 @@
         {
             "source": "{{ container_config_directory }}/{{ keystone_policy_file }}",
             "dest": "/etc/keystone/{{ keystone_policy_file }}",
-            "owner": "keystone",
-            "perm": "0600"
+            "owner": "root:keystone",
+            "perm": "0640"
         }{% endif %}
     ]
 }

@@ -6,34 +6,41 @@
         {
             "source": "{{ container_config_directory }}/keystone.conf",
             "dest": "/etc/keystone/keystone.conf",
-            "owner": "keystone",
-            "perm": "0600"
+            "owner": "root:keystone",
+            "perm": "0640"
         },
         {
             "source": "{{ container_config_directory }}/keystone-paste.ini",
             "dest": "/etc/keystone/keystone-paste.ini",
-            "owner": "keystone",
-            "perm": "0600",
+            "owner": "root:keystone",
+            "perm": "0640",
+            "optional": true
+        },
+        {
+            "source": "{{ container_config_directory }}/apache.pem",
+            "dest": "/etc/keystone/apache.pem",
+            "owner": "root:keystone",
+            "perm": "0640",
             "optional": true
         },
         {
             "source": "{{ container_config_directory }}/domains",
             "dest": "/etc/keystone/domains",
-            "owner": "keystone",
-            "perm": "0600",
+            "owner": "root:keystone",
+            "perm": "0640",
             "optional": true
         }{% if keystone_policy_file is defined %},
         {
             "source": "{{ container_config_directory }}/{{ keystone_policy_file }}",
             "dest": "/etc/keystone/{{ keystone_policy_file }}",
-            "owner": "keystone",
-            "perm": "0600"
+            "owner": "root:keystone",
+            "perm": "0640"
         }{% endif %},
         {
             "source": "{{ container_config_directory }}/wsgi-keystone.conf",
             "dest": "/etc/{{ keystone_dir }}/wsgi-keystone.conf",
-            "owner": "keystone",
-            "perm": "0600"
+            "owner": "root:keystone",
+            "perm": "0640"
         }
     ],
     "permissions": [

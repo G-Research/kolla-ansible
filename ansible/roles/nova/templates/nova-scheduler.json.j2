@@ -4,14 +4,14 @@
         {
             "source": "{{ container_config_directory }}/nova.conf",
             "dest": "/etc/nova/nova.conf",
-            "owner": "nova",
-            "perm": "0600"
+            "owner": "root:nova",
+            "perm": "0640"
         }{% if nova_policy_file is defined %},
         {
             "source": "{{ container_config_directory }}/{{ nova_policy_file }}",
             "dest": "/etc/nova/{{ nova_policy_file }}",
-            "owner": "nova",
-            "perm": "0600"
+            "owner": "root:nova",
+            "perm": "0640"
         }{% endif %}
     ],
     "permissions": [
@@ -19,6 +19,16 @@
             "path": "/var/log/kolla/nova",
             "owner": "nova:nova",
             "recurse": true
+        },
+        {
+            "path": "/usr/share/nova/api-paste.ini",
+            "owner": "root:nova",
+            "perm": "0640"
+        },
+        {
+            "path": "/etc/nova/rootwrap.conf",
+            "owner": "root:nova",
+            "perm": "0640"
         }
     ]
 }

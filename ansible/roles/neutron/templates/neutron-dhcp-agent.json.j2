@@ -4,26 +4,26 @@
         {
             "source": "{{ container_config_directory }}/neutron.conf",
             "dest": "/etc/neutron/neutron.conf",
-            "owner": "neutron",
-            "perm": "0600"
+            "owner": "root:neutron",
+            "perm": "0640"
         },
         {
             "source": "{{ container_config_directory }}/dhcp_agent.ini",
             "dest": "/etc/neutron/dhcp_agent.ini",
-            "owner": "neutron",
-            "perm": "0600"
+            "owner": "root:neutron",
+            "perm": "0640"
         },
         {
             "source": "{{ container_config_directory }}/dnsmasq.conf",
             "dest": "/etc/neutron/dnsmasq.conf",
-            "owner": "neutron",
-            "perm": "0600"
+            "owner": "root:neutron",
+            "perm": "0640"
         },
         {
             "source": "{{ container_config_directory }}/policy.json",
             "dest": "/etc/neutron/policy.json",
-            "owner": "neutron",
-            "perm": "0600",
+            "owner": "root:neutron",
+            "perm": "0640",
             "optional": true
         }
     ],
@@ -37,6 +37,16 @@
             "path": "/var/lib/neutron/kolla",
             "owner": "neutron:neutron",
             "recurse": true
+        },
+        {
+            "path": "/usr/share/neutron/api-paste.ini",
+            "owner": "root:neutron",
+            "perm": "0640"
+        },
+        {
+            "path": "/etc/neutron/rootwrap.conf",
+            "owner": "root:neutron",
+            "perm": "0640"
         }
     ]
 }

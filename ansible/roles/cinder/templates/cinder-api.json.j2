@@ -6,20 +6,20 @@
         {
             "source": "{{ container_config_directory }}/cinder.conf",
             "dest": "/etc/cinder/cinder.conf",
-            "owner": "cinder",
-            "perm": "0600"
+            "owner": "root:cinder",
+            "perm": "0640"
         },
         {
             "source": "{{ container_config_directory }}/cinder-wsgi.conf",
             "dest": "/etc/{{ cinder_dir }}/cinder-wsgi.conf",
-            "owner": "cinder",
-            "perm": "0600"
+            "owner": "root:cinder",
+            "perm": "0640"
         }{% if cinder_policy_file is defined %},
         {
             "source": "{{ container_config_directory }}/{{ cinder_policy_file }}",
             "dest": "/etc/cinder/{{ cinder_policy_file }}",
-            "owner": "cinder",
-            "perm": "0600"
+            "owner": "root:cinder",
+            "perm": "0640"
         }{% endif %}
     ],
     "permissions": [
@@ -32,6 +32,16 @@
             "path": "/var/log/kolla/cinder",
             "owner": "cinder:cinder",
             "recurse": true
+        },
+        {
+            "path": "/usr/share/neutron/api-paste.ini",
+            "owner": "root:cinder",
+            "perm": "0640"
+        },
+        {
+            "path": "/etc/neutron/rootwrap.conf",
+            "owner": "root:cinder",
+            "perm": "0640"
         }
     ]
 }

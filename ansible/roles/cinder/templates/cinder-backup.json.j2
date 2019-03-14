@@ -4,20 +4,27 @@
         {
             "source": "{{ container_config_directory }}/cinder.conf",
             "dest": "/etc/cinder/cinder.conf",
-            "owner": "cinder",
-            "perm": "0600"
+            "owner": "root:cinder",
+            "perm": "0640"
         }{% if cinder_policy_file is defined %},
         {
             "source": "{{ container_config_directory }}/{{ cinder_policy_file }}",
             "dest": "/etc/cinder/{{ cinder_policy_file }}",
-            "owner": "cinder",
-            "perm": "0600"
+            "owner": "root:cinder",
+            "perm": "0640"
         }{% endif %}{% if cinder_backend_ceph | bool %},
         {
             "source": "{{ container_config_directory }}/ceph.*",
             "dest": "/etc/ceph/",
-            "owner": "cinder",
-            "perm": "0700",
+            "owner": "root:cinder",
+            "perm": "0750",
+            "optional": {{ (not cinder_backend_ceph | bool) | string | lower }}
+        },
+        {
+            "source": "{{ container_config_directory }}/ceph.conf",
+            "dest": "/etc/ceph/ceph.conf",
+            "owner": "root:cinder",
+            "perm": "0640",
             "optional": {{ (not cinder_backend_ceph | bool) | string | lower }}
         }{% endif %}
     ],
@@ -31,6 +38,16 @@
             "path": "/var/log/kolla/cinder",
             "owner": "cinder:cinder",
             "recurse": true
+        },
+        {
+            "path": "/usr/share/neutron/api-paste.ini",
+            "owner": "root:cinder",
+            "perm": "0640"
+        },
+        {
+            "path": "/etc/neutron/rootwrap.conf",
+            "owner": "root:cinder",
+            "perm": "0640"
         }
     ]
 }

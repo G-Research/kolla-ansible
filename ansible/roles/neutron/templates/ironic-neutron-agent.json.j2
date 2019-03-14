@@ -4,8 +4,8 @@
         {
             "source": "{{ container_config_directory }}/neutron.conf",
             "dest": "/etc/neutron/neutron.conf",
-            "owner": "neutron",
-            "perm": "0600"
+            "owner": "root:neutron",
+            "perm": "0640"
         },
         {
             "source": "{{ container_config_directory }}/ironic_neutron_agent.ini",
@@ -24,6 +24,16 @@
             "path": "/var/lib/neutron/kolla",
             "owner": "neutron:neutron",
             "recurse": true
+        },
+        {
+            "path": "/usr/share/neutron/api-paste.ini",
+            "owner": "root:neutron",
+            "perm": "0640"
+        },
+        {
+            "path": "/etc/neutron/rootwrap.conf",
+            "owner": "root:neutron",
+            "perm": "0640"
         }
     ]
 }

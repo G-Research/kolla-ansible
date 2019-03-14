@@ -55,8 +55,8 @@
         {
             "source": "{{ container_config_directory }}/custom_local_settings",
             "dest": "/etc/openstack-dashboard/custom_local_settings",
-            "owner": "horizon",
-            "perm": "0600"
+            "owner": "root:horizon",
+            "perm": "0640"
         }
     ]
 }
