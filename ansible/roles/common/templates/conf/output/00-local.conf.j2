@@ -15,6 +15,12 @@
        logstash_format true
        logstash_prefix {{ kibana_log_prefix }}
        flush_interval 15s
+       reload_connections false
+       reconnect_on_error true
+       buffer_type file
+       buffer_path /var/log/kolla/fluent/ext-logstash.syslog.swift.*.buffer
+       disable_retry_limit true
+       max_retry_wait 15m
   </store>
 {% elif enable_monasca | bool %}
     type copy
@@ -50,6 +56,12 @@
        logstash_format true
        logstash_prefix {{ kibana_log_prefix }}
        flush_interval 15s
+       reload_connections false
+       reconnect_on_error true
+       buffer_type file
+       buffer_path /var/log/kolla/fluent/ext-logstash.syslog.haproxy.*.buffer
+       disable_retry_limit true
+       max_retry_wait 15m
   </store>
 {% elif enable_monasca | bool %}
     type copy
