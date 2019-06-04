@@ -183,6 +183,10 @@ control
 [aodh:children]
 control
 
+[cyborg:children]
+control
+compute
+
 [congress:children]
 control
 
@@ -492,6 +496,17 @@ aodh
 [aodh-notifier:children]
 aodh
 
+# Cyborg
+[cyborg-api:children]
+cyborg
+
+[cyborg-agent:children]
+cyborg
+
+[cyborg-conductor:children]
+cyborg
+
+
 # Panko
 [panko-api:children]
 panko
@@ -521,6 +536,9 @@ ceilometer
 ceilometer
 
 [ceilometer-compute:children]
+compute
+
+[ceilometer-ipmi:children]
 compute
 
 # Congress
@@ -661,3 +679,6 @@ storage
 
 [prometheus-openstack-exporter:children]
 monitoring
+
+[prometheus-elasticsearch-exporter:children]
+elasticsearch

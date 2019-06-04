@@ -30,6 +30,7 @@
         - enable_cloudkitty_{{ enable_cloudkitty | bool }}
         - enable_collectd_{{ enable_collectd | bool }}
         - enable_congress_{{ enable_congress | bool }}
+        - enable_cyborg_{{ enable_cyborg | bool }}
         - enable_designate_{{ enable_designate | bool }}
         - enable_elasticsearch_{{ enable_elasticsearch | bool }}
         - enable_etcd_{{ enable_etcd | bool }}
@@ -65,6 +66,7 @@
         - enable_openvswitch_{{ enable_openvswitch | bool }}_enable_ovs_dpdk_{{ enable_ovs_dpdk | bool }}
         - enable_outward_rabbitmq_{{ enable_outward_rabbitmq | bool }}
         - enable_panko_{{ enable_panko | bool }}
+        - enable_placement_{{ enable_placement | bool }}
         - enable_prometheus_{{ enable_prometheus | bool }}
         - enable_qdrouterd_{{ enable_qdrouterd | bool }}
         - enable_rabbitmq_{{ enable_rabbitmq | bool }}
@@ -156,6 +158,11 @@
             tasks_from: loadbalancer
           tags: congress
           when: enable_congress | bool
+        - include_role:
+            role: cyborg
+            tasks_from: loadbalancer
+          tags: cyborg
+          when: enable_cyborg | bool
         - include_role:
             role: designate
             tasks_from: loadbalancer
@@ -266,6 +273,10 @@
             tasks_from: loadbalancer
           tags: neutron
           when: enable_neutron | bool
+        - include_role:
+            role: placement
+            tasks_from: loadbalancer
+          tags: placement
         - include_role:
             role: nova
             tasks_from: loadbalancer
@@ -466,6 +477,7 @@
     - prometheus-cadvisor
     - prometheus-alertmanager
     - prometheus-openstack-exporter
+    - prometheus-elasticsearch-exporter
     - '&enable_prometheus_True'
   serial: '{{ kolla_serial|default("0") }}'
   roles:
@@ -636,7 +648,6 @@
   hosts:
     - ceph-mon
     - glance-api
-    - glance-registry
     - '&enable_glance_True'
   serial: '{{ kolla_serial|default("0") }}'
   roles:
@@ -672,6 +683,17 @@
     - { role: cinder,
         tags: cinder,
         when: enable_cinder | bool }
+
+- name: Apply role placement
+  gather_facts: false
+  hosts:
+    - placement-api
+    - '&enable_placement_True'
+  serial: '{{ kolla_serial|default("0") }}'
+  roles:
+    - { role: placement,
+        tags: placement,
+        when: enable_placement | bool }
 
 - name: Apply role nova
   gather_facts: false
@@ -912,6 +934,7 @@
     - ceilometer-central
     - ceilometer-notification
     - ceilometer-compute
+    - ceilometer-ipmi
     - '&enable_ceilometer_True'
   serial: '{{ kolla_serial|default("0") }}'
   roles:
@@ -979,6 +1002,17 @@
     - { role: congress,
         tags: congress,
         when: enable_congress | bool }
+
+- name: Apply role cyborg
+  gather_facts: false
+  hosts:
+    - cyborg
+    - '&enable_cyborg_True'
+  serial: '{{ serial|default("0") }}'
+  roles:
+    - { role: cyborg,
+        tags: cyborg,
+        when: enable_cyborg | bool }
 
 - name: Apply role tempest
   gather_facts: false

@@ -50,6 +50,7 @@ Kolla-Ansible deploys containers for the following OpenStack projects:
 - `Cinder <https://docs.openstack.org/cinder/latest/>`__
 - `CloudKitty <https://docs.openstack.org/cloudkitty/latest/>`__
 - `Congress <https://docs.openstack.org/congress/latest/>`__
+- `Cyborg <https://docs.openstack.org/cyborg/latest/>`__
 - `Designate <https://docs.openstack.org/designate/latest/>`__
 - `Freezer <https://docs.openstack.org/freezer/latest/>`__
 - `Glance <https://docs.openstack.org/glance/latest/>`__
@@ -146,7 +147,7 @@ workflow <https://docs.openstack.org/infra/manual/developers.html>`__.
    `Launchpad <https://launchpad.net/kolla-ansible>`__.
 -  Attend weekly
    `meetings <https://wiki.openstack.org/wiki/Meetings/Kolla>`__.
--  Contribute `code <https://git.openstack.org/openstack/kolla-ansible>`__.
+-  Contribute `code <https://opendev.org/openstack/kolla-ansible>`__.
 
 Contributors
 ============

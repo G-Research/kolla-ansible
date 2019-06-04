@@ -49,7 +49,7 @@ kolla_enable_sanity_cinder: "{{ kolla_enable_sanity_checks }}"
 kolla_enable_sanity_swift: "{{ kolla_enable_sanity_checks }}"
 
 kolla_dev_repos_directory: "/opt/stack/"
-kolla_dev_repos_git: "https://git.openstack.org/openstack"
+kolla_dev_repos_git: "https://opendev.org/openstack"
 kolla_dev_repos_pull: "no"
 kolla_dev_mode: "no"
 kolla_source_version: "master"
@@ -167,6 +167,8 @@ kolla_external_vip_interface: "{{ network_interface }}"
 api_interface: "{{ network_interface }}"
 storage_interface: "{{ network_interface }}"
 cluster_interface: "{{ network_interface }}"
+swift_storage_interface: "{{ storage_interface }}"
+swift_replication_interface: "{{ swift_storage_interface }}"
 migration_interface: "{{ network_interface }}"
 tunnel_interface: "{{ network_interface }}"
 octavia_network_interface: "{{ api_interface }}"
@@ -184,7 +186,10 @@ neutron_ipam_driver: "internal"
 
 # The default ports used by each service.
 # The list should be in alphabetical order
+aodh_internal_fqdn: "{{ kolla_internal_fqdn }}"
+aodh_external_fqdn: "{{ kolla_external_fqdn }}"
 aodh_api_port: "8042"
+aodh_api_listen_port: "{{ aodh_api_port }}"
 
 barbican_internal_fqdn: "{{ kolla_internal_fqdn }}"
 barbican_external_fqdn: "{{ kolla_external_fqdn }}"
@@ -203,6 +208,8 @@ congress_api_port: "1789"
 cloudkitty_api_port: "8889"
 
 collectd_udp_port: "25826"
+
+cyborg_api_port: "6666"
 
 designate_internal_fqdn: "{{ kolla_internal_fqdn }}"
 designate_external_fqdn: "{{ kolla_external_fqdn }}"
@@ -226,23 +233,39 @@ glance_external_fqdn: "{{ kolla_external_fqdn }}"
 glance_api_port: "9292"
 glance_api_listen_port: "{{ glance_api_port }}"
 
+gnocchi_internal_fqdn: "{{ kolla_internal_fqdn }}"
+gnocchi_external_fqdn: "{{ kolla_external_fqdn }}"
 gnocchi_api_port: "8041"
+gnocchi_api_listen_port: "{{ gnocchi_api_port }}"
 
 grafana_server_port: "3000"
 
 haproxy_stats_port: "1984"
 haproxy_monitor_port: "61313"
 
+heat_internal_fqdn: "{{ kolla_internal_fqdn }}"
+heat_external_fqdn: "{{ kolla_external_fqdn }}"
 heat_api_port: "8004"
+heat_api_listen_port: "{{ heat_api_port }}"
+heat_cfn_internal_fqdn: "{{ kolla_internal_fqdn }}"
+heat_cfn_external_fqdn: "{{ kolla_external_fqdn }}"
 heat_api_cfn_port: "8000"
+heat_api_cfn_listen_port: "{{ heat_api_cfn_port }}"
 
 horizon_port: "80"
+horizon_listen_port: "{{ horizon_port }}"
 
 influxdb_admin_port: "8083"
 influxdb_http_port: "8086"
 
+ironic_internal_fqdn: "{{ kolla_internal_fqdn }}"
+ironic_external_fqdn: "{{ kolla_external_fqdn }}"
 ironic_api_port: "6385"
+ironic_api_listen_port: "{{ ironic_api_port }}"
+ironic_inspector_internal_fqdn: "{{ kolla_internal_fqdn }}"
+ironic_inspector_external_fqdn: "{{ kolla_external_fqdn }}"
 ironic_inspector_port: "5050"
+ironic_inspector_listen_port: "{{ ironic_inspector_port }}"
 ironic_ipxe_port: "8089"
 
 iscsi_port: "3260"
@@ -341,6 +364,7 @@ prometheus_alertmanager_cluster_port: "9094"
 
 # Prometheus openstack-exporter ports
 prometheus_openstack_exporter_port: "9198"
+prometheus_elasticsearch_exporter_port: "9108"
 
 qdrouterd_port: "31459"
 
@@ -433,7 +457,7 @@ openstack_logging_debug: "False"
 openstack_region_name: "RegionOne"
 
 # Variable defined the pin_release_version, apply for rolling upgrade process
-openstack_previous_release_name: "queens"
+openstack_previous_release_name: "stein"
 
 # A list of policy file formats that are supported by Oslo.policy
 supported_policy_format_list:
@@ -486,6 +510,7 @@ enable_barbican: "no"
 enable_blazar: "no"
 enable_cadf_notifications: "no"
 enable_ceilometer: "no"
+enable_ceilometer_ipmi: "no"
 enable_central_logging: "no"
 enable_ceph: "no"
 enable_ceph_mds: "no"
@@ -504,6 +529,7 @@ enable_cinder_backend_zfssa_iscsi: "no"
 enable_cinder_backend_quobyte: "no"
 enable_cloudkitty: "no"
 enable_congress: "no"
+enable_cyborg: "no"
 enable_designate: "no"
 enable_etcd: "no"
 enable_fluentd: "yes"
@@ -580,6 +606,7 @@ enable_openvswitch: "{{ enable_neutron | bool and neutron_plugin_agent != 'linux
 enable_ovs_dpdk: "no"
 enable_osprofiler: "no"
 enable_panko: "no"
+enable_placement: "{{ enable_nova }}"
 enable_qdrouterd: "{{ 'yes' if om_rpc_transport == 'amqp' else 'no' }}"
 enable_rally: "no"
 enable_redis: "no"
@@ -776,10 +803,7 @@ gnocchi_metric_datadir_volume: "gnocchi"
 cinder_backend_ceph: "{{ enable_ceph }}"
 cinder_backend_vmwarevc_vmdk: "no"
 cinder_volume_group: "cinder-volumes"
-# DEPRECATED: Use 'cinder_target_helper' instead. This option will be removed
-# in the Train release.
-cinder_iscsi_helper: "tgtadm"
-cinder_target_helper: "{{ cinder_iscsi_helper }}"
+cinder_target_helper: "tgtadm"
 
 # Valid options are [ nfs, swift, ceph ]
 cinder_backup_driver: "ceph"
@@ -978,9 +1002,11 @@ enable_prometheus_cadvisor: "{{ enable_prometheus | bool }}"
 enable_prometheus_alertmanager: "{{ enable_prometheus | bool }}"
 enable_prometheus_ceph_mgr_exporter: "{{ enable_ceph | bool and enable_prometheus | bool }}"
 enable_prometheus_openstack_exporter: "{{ enable_prometheus | bool }}"
+enable_prometheus_elasticsearch_exporter: "{{ enable_prometheus | bool and enable_elasticsearch | bool }}"
 
 prometheus_alertmanager_user: "admin"
 prometheus_openstack_exporter_interval: "60s"
+prometheus_elasticsearch_exporter_interval: "60s"
 
 ############
 # Vitrage

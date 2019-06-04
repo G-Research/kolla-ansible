@@ -5,12 +5,6 @@
   become: True
   when: ansible_os_family == 'Debian'
 
-- name: Update yum cache
-  yum:
-    update_cache: yes
-  become: True
-  when: ansible_os_family == 'RedHat'
-
 # TODO(inc0): Gates don't seem to have ufw executable, check for it instead of ignore errors
 - name: Set firewall default policy
   become: True
@@ -23,7 +17,10 @@
 - name: Check if firewalld is installed
   command: rpm -q firewalld
   register: firewalld_check
+  changed_when: false
   failed_when: firewalld_check.rc > 1
+  args:
+    warn: false
   when: ansible_os_family == 'RedHat'
 
 - name: Disable firewalld
@@ -51,28 +48,26 @@
 
 - name: Install apt packages
   package:
-    name: "{{ item }}"
+    name: "{{ (debian_pkg_install | join(' ')).split() }}"
     state: present
   become: True
-  with_items: "{{ debian_pkg_install }}"
   when: ansible_os_family == 'Debian'
   register: apt_install_result
 
 - name: Install deltarpm packages
   package:
-    name: "{{ item }}"
+    name: deltarpm
     state: present
+    update_cache: yes
   become: True
-  with_items:
-    - deltarpm
   when: ansible_os_family == 'RedHat'
 
 - name: Install yum packages
   package:
-    name: "{{ item }}"
+    name: "{{ (redhat_pkg_install | join(' ')).split() }}"
     state: present
+    update_cache: yes
   become: True
-  with_items: "{{ redhat_pkg_install }}"
   when: ansible_os_family == 'RedHat'
   register: yum_install_result
 
@@ -112,6 +107,7 @@
     virtualenv: "{{ virtualenv is none | ternary(omit, virtualenv) }}"
     virtualenv_site_packages: "{{ virtualenv is none | ternary(omit, virtualenv_site_packages) }}"
   become: True
+  when: easy_install_available
 
 - name: Install latest pip in the virtualenv
   pip:
@@ -132,20 +128,14 @@
 
 - name: Remove packages
   package:
-    name: "{{ item }}"
+    name: "{{ (ubuntu_pkg_removals | join(' ')).split() }}"
     state: absent
-  with_items: "{{ ubuntu_pkg_removals }}"
   become: True
-  when:
-    - ansible_distribution|lower == "ubuntu"
-    - item != ""
+  when: ansible_distribution|lower == "ubuntu"
 
 - name: Remove packages
   package:
-    name: "{{ item }}"
+    name: "{{ (redhat_pkg_removals | join(' ')).split() }}"
     state: absent
-  with_items: "{{ redhat_pkg_removals }}"
   become: True
-  when:
-    - ansible_os_family == 'RedHat'
-    - item != ""
+  when: ansible_os_family == 'RedHat'

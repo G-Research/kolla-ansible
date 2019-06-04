@@ -16,14 +16,24 @@ openstack_logging_debug: "True"
 openstack_service_workers: "1"
 {% endif %}
 
-{% if need_build_image %}
+{% if need_build_image and not is_previous_release %}
 # NOTE(Jeffrey4l): use different a docker namespace name in case it pull image from hub.docker.io when deplying
 docker_namespace: "lokolla"
 docker_registry: "{{ api_interface_address }}:4000"
+openstack_release: "{{ build_image_tag }}"
 {% else %}
 # use docker hub images
 docker_namespace: "kolla"
+{% if need_build_image and is_previous_release %}
+# NOTE(mgoddard): Ensure that the insecure local registry is trusted, since it
+# will be the source of images during the upgrade.
+docker_custom_option: "--insecure-registry {{ api_interface_address }}:4000"
+{% endif %}
+{% if not is_previous_release %}
 openstack_release: "{{ zuul.branch | basename }}"
+{% else %}
+openstack_release: "{{ previous_release }}"
+{% endif %}
 {% endif %}
 
 {% if scenario == "ceph" %}
@@ -34,6 +44,12 @@ ceph_pool_pgp_num: 8
 # This is experimental feature, disable if gate fail.
 # In multinode jobs without ceph rolling upgrade fails.
 glance_enable_rolling_upgrade: "yes"
+{% endif %}
+
+{% if scenario == "cinder-lvm" %}
+enable_cinder: "yes"
+enable_cinder_backend_lvm: "yes"
+glance_api_hosts: ["{{ inventory_hostname }}"]
 {% endif %}
 
 {% if scenario == "zun" %}

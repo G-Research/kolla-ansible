@@ -8,19 +8,6 @@ export PYTHONUNBUFFERED=1
 
 GIT_PROJECT_DIR=$(mktemp -d)
 
-function clone_repos {
-    cat > /tmp/clonemap <<EOF
-clonemap:
- - name: openstack/kolla
-   dest: ${GIT_PROJECT_DIR}/kolla
- - name: openstack/requirements
-   dest: ${GIT_PROJECT_DIR}/requirements
-EOF
-    /usr/zuul-env/bin/zuul-cloner -m /tmp/clonemap --workspace "$(pwd)" \
-        --cache-dir /opt/git git://git.openstack.org \
-        openstack/kolla openstack/requirements
-}
-
 function setup_config {
     # Use Infra provided pypi.
     # Wheel package mirror may be not compatible. So do not enable it.
@@ -35,13 +22,17 @@ EOF
     rm ${PIP_CONF}
 
     if [[ $ACTION != "bifrost" ]]; then
-        GATE_IMAGES="cron,fluentd,glance,haproxy,keepalived,keystone,kolla-toolbox,mariadb,memcached,neutron,nova,openvswitch,rabbitmq,horizon,chrony,heat"
+        GATE_IMAGES="cron,fluentd,glance,haproxy,keepalived,keystone,kolla-toolbox,mariadb,memcached,neutron,nova,openvswitch,rabbitmq,horizon,chrony,heat,placement"
     else
         GATE_IMAGES="bifrost"
     fi
 
     if [[ $ACTION == "ceph" ]]; then
         GATE_IMAGES+=",ceph,cinder"
+    fi
+
+    if [[ $ACTION == "cinder-lvm" ]]; then
+        GATE_IMAGES+=",cinder,iscsid,tgtd"
     fi
 
     if [[ $ACTION == "zun" ]]; then
@@ -52,9 +43,6 @@ EOF
         GATE_IMAGES+=",tacker,mistral,redis,barbican"
     fi
 
-    # Use the kolla-ansible tag rather than the kolla tag, since this is what
-    # kolla-ansible will use by default.
-    TAG=$(python -c "import pbr.version; print(pbr.version.VersionInfo('kolla-ansible'))")
     cat <<EOF | sudo tee /etc/kolla/kolla-build.conf
 [DEFAULT]
 include_header = /etc/kolla/header
@@ -71,7 +59,7 @@ logs_dir = /tmp/logs/build
 gate = ${GATE_IMAGES}
 EOF
 
-mkdir -p /tmp/logs/build
+    mkdir -p /tmp/logs/build
 
     if [[ "${DISTRO}" == "Debian" ]]; then
         # Infra does not sign their mirrors so we ignore gpg signing in the gate
@@ -101,17 +89,17 @@ function setup_ansible {
     RAW_INVENTORY=/etc/kolla/inventory
 
     # TODO(SamYaple): Move to virtualenv
-    sudo -H pip install -U "ansible>=2.4" "docker>=2.0.0" "python-openstackclient" "ara" "cmd2<0.9.0"
+    sudo -H pip install -U "ansible>=2.4" "docker>=2.0.0" "python-openstackclient" "ara<1.0.0" "cmd2<0.9.0"
     if [[ $ACTION == "zun" ]]; then
         sudo -H pip install -U "python-zunclient"
     fi
     detect_distro
 
     sudo mkdir /etc/ansible
-    ara_location=$(python -c "import os,ara; print(os.path.dirname(ara.__file__))")
+    ara_location=$(python -m ara.setup.callback_plugins)
     sudo tee /etc/ansible/ansible.cfg<<EOF
 [defaults]
-callback_plugins = ${ara_location}/plugins/callbacks
+callback_plugins = ${ara_location}
 host_key_checking = False
 EOF
 
@@ -134,7 +122,6 @@ function prepare_images {
 }
 
 
-clone_repos
 setup_ansible
 setup_config
 setup_node

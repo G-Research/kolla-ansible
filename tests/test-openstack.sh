@@ -24,9 +24,20 @@ function test_openstack_logged {
     fi
     echo "SUCCESS: Server creation"
 
-    if echo $ACTION | grep -q "ceph"; then
+    if [[ $ACTION = "ceph" ]] || [[ $ACTION == "cinder-lvm" ]]; then
         echo "TESTING: Cinder volume attachment"
         openstack volume create --size 2 test_volume
+        attempt=1
+        while [[ $(openstack volume show test_volume -f value -c status) != "available" ]]; do
+            echo "Volume not available yet"
+            attempt=$((attempt+1))
+            if [[ $attempt -eq 10 ]]; then
+                echo "Volume failed to become available"
+                openstack volume show test_volume
+                return 1
+            fi
+            sleep 10
+        done
         openstack server add volume kolla_boot_test test_volume --device /dev/vdb
         attempt=1
         while [[ $(openstack volume show test_volume -f value -c status) != "in-use" ]]; do

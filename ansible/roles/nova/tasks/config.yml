@@ -62,7 +62,7 @@
   template:
     src: "{{ item.key }}.json.j2"
     dest: "{{ node_config_directory }}/{{ item.key }}/config.json"
-    mode: "0770"
+    mode: "0660"
   register: config_jsons
   when:
     - inventory_hostname in groups[item.value.group]
@@ -81,17 +81,6 @@
 - name: Copying over nova.conf
   become: true
   vars:
-    services_require_nova_conf:
-      - placement-api
-      - nova-api
-      - nova-compute
-      - nova-compute-ironic
-      - nova-conductor
-      - nova-consoleauth
-      - nova-novncproxy
-      - nova-serialproxy
-      - nova-scheduler
-      - nova-spicehtml5proxy
     service_name: "{{ item.key }}"
   merge_configs:
     sources:
@@ -106,7 +95,7 @@
   when:
     - inventory_hostname in groups[item.value.group]
     - item.value.enabled | bool
-    - item.key in services_require_nova_conf
+    - item.key in nova_services_require_nova_conf
   with_dict: "{{ nova_services }}"
   notify:
     - "Restart {{ item.key }} container"
@@ -128,20 +117,6 @@
     - { src: "libvirtd.conf.j2", dest: "libvirtd.conf" }
   notify:
     - Restart nova-libvirt container
-
-- name: Copying over placement-api wsgi configuration
-  become: true
-  vars:
-    service: "{{ nova_services['placement-api'] }}"
-  template:
-    src: "placement-api-wsgi.conf.j2"
-    dest: "{{ node_config_directory }}/placement-api/placement-api-wsgi.conf"
-  register: placement_api_wsgi_conf
-  when:
-    - inventory_hostname in groups[service.group]
-    - service.enabled | bool
-  notify:
-    - Restart placement-api container
 
 - name: Copying files for nova-ssh
   become: true
@@ -169,6 +144,7 @@
   copy:
     src: "{{ node_custom_config }}/vmware_ca"
     dest: "{{ node_config_directory }}/nova-compute/vmware_ca"
+    mode: "0660"
   register: vcenter_ca_file
   when:
     - nova_compute_virt_type == "vmware"
@@ -184,6 +160,7 @@
   copy:
     src: "{{ item }}"
     dest: "{{ node_config_directory }}/nova-compute/release"
+    mode: "0660"
   with_first_found:
     - files:
         - "{{ node_custom_config }}/nova_compute/{{ inventory_hostname }}/release"
@@ -201,7 +178,6 @@
   become: true
   vars:
     services_require_policy_json:
-      - placement-api
       - nova-api
       - nova-compute
       - nova-compute-ironic
@@ -214,6 +190,7 @@
   template:
     src: "{{ nova_policy_file_path }}"
     dest: "{{ node_config_directory }}/{{ item.key }}/{{ nova_policy_file }}"
+    mode: "0660"
   register: nova_policy_overwriting
   when:
     - inventory_hostname in groups[item.value.group]

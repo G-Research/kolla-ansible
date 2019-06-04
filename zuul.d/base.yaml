@@ -13,13 +13,21 @@
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/.*
-      - ^test-requirements.txt$
+      - ^lower-constraints.txt$
       - ^releasenotes/.*$
+      - ^test-requirements.txt$
     vars:
       scenario: aio
       enable_core_openstack: yes
     roles:
-      - zuul: openstack-infra/zuul-jobs
+      - zuul: zuul/zuul-jobs
+
+- job:
+    name: kolla-ansible-upgrade-base
+    parent: kolla-ansible-base
+    vars:
+      previous_release: stein
+      scenario: upgrade
 
 - job:
     name: kolla-ansible-bifrost-base

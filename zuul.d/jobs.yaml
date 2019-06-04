@@ -10,7 +10,7 @@
 - job:
     name: kolla-ansible-ubuntu-source
     parent: kolla-ansible-base
-    nodeset: kolla-ansible-xenial
+    nodeset: kolla-ansible-bionic
     vars:
       base_distro: ubuntu
       install_type: source
@@ -36,7 +36,7 @@
 - job:
     name: kolla-ansible-ubuntu-binary
     parent: kolla-ansible-base
-    nodeset: kolla-ansible-xenial
+    nodeset: kolla-ansible-bionic
     voting: false
     vars:
       base_distro: ubuntu
@@ -54,7 +54,8 @@
 - job:
     name: kolla-ansible-ubuntu-source-ceph
     parent: kolla-ansible-base
-    nodeset: kolla-ansible-xenial-multi
+    nodeset: kolla-ansible-bionic-multi
+    timeout: 9000
     voting: false
     vars:
       base_distro: ubuntu
@@ -72,6 +73,7 @@
     name: kolla-ansible-centos-source-ceph
     parent: kolla-ansible-base
     nodeset: kolla-ansible-centos-multi
+    timeout: 9000
     voting: false
     vars:
       base_distro: centos
@@ -89,6 +91,7 @@
     name: kolla-ansible-oraclelinux-source-ceph
     parent: kolla-ansible-base
     nodeset: kolla-ansible-centos-multi
+    timeout: 9000
     voting: false
     vars:
       base_distro: oraclelinux
@@ -103,6 +106,42 @@
         ceph_osd_storetype: bluestore
 
 - job:
+    name: kolla-ansible-ubuntu-source-cinder-lvm
+    parent: kolla-ansible-base
+    nodeset: kolla-ansible-bionic-multi
+    voting: false
+    vars:
+      base_distro: ubuntu
+      install_type: source
+      scenario: cinder-lvm
+
+- job:
+    name: kolla-ansible-centos-source-cinder-lvm
+    parent: kolla-ansible-base
+    nodeset: kolla-ansible-centos-multi
+    voting: false
+    vars:
+      base_distro: centos
+      install_type: source
+      scenario: cinder-lvm
+
+- job:
+    name: kolla-ansible-centos-source-upgrade
+    parent: kolla-ansible-upgrade-base
+    nodeset: kolla-ansible-centos
+    vars:
+      base_distro: centos
+      install_type: source
+
+- job:
+    name: kolla-ansible-ubuntu-source-upgrade
+    parent: kolla-ansible-upgrade-base
+    nodeset: kolla-ansible-bionic
+    vars:
+      base_distro: ubuntu
+      install_type: source
+
+- job:
     name: kolla-ansible-bifrost-centos-source
     parent: kolla-ansible-bifrost-base
     nodeset: kolla-ansible-centos
@@ -113,7 +152,7 @@
 - job:
     name: kolla-ansible-ubuntu-source-zun
     parent: kolla-ansible-base
-    nodeset: kolla-ansible-xenial
+    nodeset: kolla-ansible-bionic
     voting: false
     vars:
       base_distro: ubuntu
