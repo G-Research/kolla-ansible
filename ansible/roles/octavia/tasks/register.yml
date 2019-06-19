@@ -12,6 +12,7 @@
       region_name: "{{ openstack_region_name }}"
       auth: "{{ openstack_octavia_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
   with_items:
     - {'interface': 'admin', 'url': '{{ octavia_admin_endpoint }}'}
@@ -29,6 +30,7 @@
       region_name: "{{ openstack_region_name }}"
       auth: "{{ openstack_octavia_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
 
 - name: Adding octavia user into admin project
@@ -40,6 +42,7 @@
       project: admin
       auth: "{{ openstack_octavia_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
 
 - name: Adding octavia related roles
@@ -49,5 +52,6 @@
       name: "{{ item }}"
       auth: "{{ openstack_octavia_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
   with_items: "{{ octavia_required_roles }}"

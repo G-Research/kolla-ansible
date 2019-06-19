@@ -481,6 +481,9 @@ nova_console: "novnc"
 # Valid options are [ public, internal, admin ]
 openstack_interface: "admin"
 
+# Openstack CA certificate bundle file
+openstack_cacert: ""
+
 # Enable core OpenStack services. This includes:
 # glance, keystone, neutron, nova, heat, and horizon.
 enable_openstack_core: "yes"

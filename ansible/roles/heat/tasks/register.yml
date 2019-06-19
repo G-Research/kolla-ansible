@@ -12,6 +12,7 @@
       region_name: "{{ openstack_region_name }}"
       auth: "{{ openstack_heat_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
   with_items:
     - {'interface': 'admin', 'url': '{{ heat_admin_endpoint }}', 'service_name': 'heat', 'service_type': 'orchestration', 'description': 'Orchestration'}
@@ -32,6 +33,7 @@
       region_name: "{{ openstack_region_name }}"
       auth: "{{ openstack_heat_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
 
 - name: Creating the heat_stack_user role
@@ -41,6 +43,7 @@
       name: "{{ heat_stack_user_role }}"
       auth: "{{ openstack_heat_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
 
 - name: Creating the heat_stack_owner role
@@ -50,6 +53,7 @@
       name: "{{ heat_stack_owner_role }}"
       auth: "{{ openstack_heat_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
 
 - name: Add the heat_stack_owner role to the admin project
@@ -62,4 +66,5 @@
       region_name: "{{ openstack_region_name }}"
       auth: "{{ openstack_heat_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True

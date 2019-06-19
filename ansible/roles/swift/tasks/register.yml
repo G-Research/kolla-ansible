@@ -12,6 +12,7 @@
       region_name: "{{ openstack_region_name }}"
       auth: "{{ openstack_swift_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
   with_items:
     - {'interface': 'admin', 'url': '{{ swift_admin_endpoint }}'}
@@ -29,6 +30,7 @@
       region_name: "{{ openstack_region_name }}"
       auth: "{{ openstack_swift_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
 
 - name: Creating the ResellerAdmin role
@@ -39,4 +41,5 @@
       region_name: "{{ openstack_region_name }}"
       auth: "{{ openstack_swift_auth }}"
       endpoint_type: "{{ openstack_interface }}"
+      cacert: "{{ openstack_cacert }}"
   run_once: True
