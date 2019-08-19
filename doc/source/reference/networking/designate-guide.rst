@@ -77,8 +77,7 @@ Configure Designate options in ``/etc/kolla/passwords.yml``
     designate_infoblox_auth_password: "password"
 
 For more information about how the Infoblox backend works, see
-`Infoblox backend
-<https://docs.openstack.org/designate/latest/admin/backends/infoblox.html>`__.
+:designate-doc:`Infoblox backend <admin/backends/infoblox.html>`.
 
 Neutron and Nova Integration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,7 +122,7 @@ Associate a domain to a network:
 
 .. code-block:: console
 
-   neutron net-update <NETWORK_ID> --dns_domain sample.openstack.org.
+   openstack network set <NETWORK_ID> --dns-domain sample.openstack.org.
 
 Start an instance:
 

@@ -1,8 +1,8 @@
 .. _swift-guide:
 
-=============================
-Swift- Object storage service
-=============================
+==============================
+Swift - Object storage service
+==============================
 
 Overview
 ~~~~~~~~
@@ -94,9 +94,9 @@ table** example listed above. Please modify accordingly if your setup is
 different.
 
 If using a separate replication network it is necessary to add the replication
-network IP addresses to the rings. See the `Swift documentation
-<https://docs.openstack.org/swift/latest/replication_network.html#dedicated-replication-network>`__
-for details on how to do that.
+network IP addresses to the rings. See the :swift-doc:`Swift documentation
+<replication_network.html#dedicated-replication-network>` for details on
+how to do that.
 
 Prepare for Rings generating
 ----------------------------
@@ -203,8 +203,8 @@ To rebalance the ring files:
          /etc/kolla/config/swift/${ring}.builder rebalance;
    done
 
-For more information, see `the Swift documentation
-<https://docs.openstack.org/swift/latest/install/initial-rings.html>`__.
+For more information, see :swift-doc:`the Swift documentation
+<install/initial-rings.html>`.
 
 Deploying
 ~~~~~~~~~
@@ -266,3 +266,12 @@ A very basic smoke test:
    | Containers | 1                                     |
    | Objects    | 1                                     |
    +------------+---------------------------------------+
+
+S3 API
+~~~~~~
+
+The Swift S3 API can be enabled by setting ``enable_swift_s3api`` to ``true``
+in ``globals.yml``. It is disabled by default. In order to use this API it is
+necessary to obtain EC2 credentials from Keystone. See the `Swift documentation
+<https://docs.openstack.org/swift/latest/middleware.html#module-swift.common.middleware.s3api.s3api>`__
+for details.

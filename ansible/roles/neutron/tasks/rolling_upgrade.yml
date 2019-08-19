@@ -9,6 +9,7 @@
 - name: Running Neutron database expand container
   vars:
     neutron_server: "{{ neutron_services['neutron-server'] }}"
+  become: true
   kolla_docker:
     action: "start_container"
     common_options: "{{ docker_common_options }}"
@@ -22,17 +23,15 @@
     labels:
       UPGRADE:
     name: "bootstrap_neutron"
-    restart_policy: "never"
+    restart_policy: no
     volumes: "{{ neutron_server.volumes }}"
   run_once: True
   delegate_to: "{{ groups['neutron-server'][0] }}"
 
 - include_tasks: bootstrap_service.yml
   vars:
-    neutron_lbaas_agent: "{{ neutron_services['neutron-lbaas-agent'] }}"
     neutron_server: "{{ neutron_services['neutron-server'] }}"
-  when: (neutron_lbaas_agent.enabled | bool)
-        or (enable_neutron_sfc | bool and neutron_server.enabled | bool)
+  when: (enable_neutron_sfc | bool and neutron_server.enabled | bool)
 
 - name: Flush Handlers
   meta: flush_handlers
@@ -66,6 +65,7 @@
 - name: Running Neutron database contract container
   vars:
     neutron_server: "{{ neutron_services['neutron-server'] }}"
+  become: true
   kolla_docker:
     action: "start_container"
     common_options: "{{ docker_common_options }}"
@@ -79,7 +79,7 @@
     labels:
       UPGRADE:
     name: "bootstrap_neutron"
-    restart_policy: "never"
+    restart_policy: no
     volumes: "{{ neutron_server.volumes }}"
   run_once: True
   delegate_to: "{{ groups['neutron-server'][0] }}"

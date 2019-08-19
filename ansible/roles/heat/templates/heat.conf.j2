@@ -3,7 +3,6 @@ debug = {{ heat_logging_debug }}
 
 log_dir = /var/log/kolla/heat
 
-heat_watch_server_url = {{ public_protocol }}://{{ heat_cfn_external_fqdn }}:{{ heat_api_cfn_port }}
 heat_metadata_server_url = {{ public_protocol }}://{{ heat_cfn_external_fqdn }}:{{ heat_api_cfn_port }}
 heat_waitcondition_server_url = {{ public_protocol }}://{{ heat_cfn_external_fqdn }}:{{ heat_api_cfn_port }}/v1/waitcondition
 
@@ -78,9 +77,9 @@ auth_uri = {{ keystone_public_url }}
 
 [oslo_messaging_notifications]
 transport_url = {{ notify_transport_url }}
-{% if enable_ceilometer | bool %}
+{% if heat_enabled_notification_topics %}
 driver = messagingv2
-topics = notifications
+topics = {{ heat_enabled_notification_topics | map(attribute='name') | join(',') }}
 {% else %}
 driver = noop
 {% endif %}

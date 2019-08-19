@@ -25,8 +25,6 @@
 - name: Flush handlers
   meta: flush_handlers
 
-- include_tasks: reload.yml
-
 - name: Migrate Nova database
   vars:
     nova_api: "{{ nova_services['nova-api'] }}"
@@ -42,7 +40,7 @@
     labels:
       BOOTSTRAP:
     name: "bootstrap_nova"
-    restart_policy: "never"
+    restart_policy: no
     volumes: "{{ nova_api.volumes }}"
   run_once: True
   delegate_to: "{{ groups[nova_api.group][0] }}"

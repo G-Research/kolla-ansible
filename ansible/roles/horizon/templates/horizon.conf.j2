@@ -1,4 +1,5 @@
-{% set python_path = '/usr/share/openstack-dashboard' if horizon_install_type == 'binary' else '/var/lib/kolla/venv/lib/python2.7/site-packages' %}
+{% set python_path = '/usr/share/openstack-dashboard' if horizon_install_type == 'binary' else '/var/lib/kolla/venv/lib/python' + distro_python_version + '/site-packages' %}
+
 Listen {{ api_interface_address }}:{{ horizon_listen_port }}
 
 ServerSignature Off
@@ -12,7 +13,7 @@ TraceEnable off
     CustomLog /var/log/kolla/horizon/horizon-access.log logformat
 
     WSGIScriptReloading On
-    WSGIDaemonProcess horizon-http processes={{ openstack_service_workers }} threads=1 user=horizon group=horizon display-name=%{GROUP} python-path={{ python_path }}
+    WSGIDaemonProcess horizon-http processes={{ horizon_wsgi_processes }} threads={{ horizon_wsgi_threads }} user=horizon group=horizon display-name=%{GROUP} python-path={{ python_path }}
     WSGIProcessGroup horizon-http
     WSGIScriptAlias / {{ python_path }}/openstack_dashboard/wsgi/django.wsgi
     WSGIPassAuthorization On

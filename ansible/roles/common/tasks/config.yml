@@ -32,32 +32,10 @@
     dest: "{{ node_config_directory }}/{{ item.key }}/config.json"
     mode: "0660"
   become: true
-  register: common_config_jsons
   when: item.value.enabled | bool
   with_dict: "{{ common_services }}"
   notify:
     - "Restart {{ item.key }} container"
-
-- name: Copying over fluentd input config files
-  template:
-    src: "conf/input/{{ item }}.conf.j2"
-    dest: "{{ node_config_directory }}/fluentd/input/{{ item }}.conf"
-    mode: "0660"
-  become: true
-  register: fluentd_input
-  when: enable_fluentd | bool
-  with_items:
-    - "00-global"
-    - "01-syslog"
-    - "02-mariadb"
-    - "03-rabbitmq"
-    - "04-openstack-wsgi"
-    - "05-libvirt"
-    - "06-zookeeper"
-    - "07-kafka"
-    - "08-opendaylight"
-  notify:
-    - Restart fluentd container
 
 - name: Find custom fluentd input config files
   local_action:
@@ -69,12 +47,36 @@
   when:
     - enable_fluentd | bool
 
+- name: Copying over fluentd input config files
+  vars:
+    customised_input_files: "{{ find_custom_fluentd_inputs.files | map(attribute='path') | map('basename') | list }}"
+  template:
+    src: "conf/input/{{ item }}.conf.j2"
+    dest: "{{ node_config_directory }}/fluentd/input/{{ item }}.conf"
+    mode: "0660"
+  become: true
+  when:
+    - enable_fluentd | bool
+    - item ~ '.conf' not in customised_input_files
+  with_items:
+    - "00-global"
+    - "01-syslog"
+    - "02-mariadb"
+    - "03-rabbitmq"
+    - "04-openstack-wsgi"
+    - "05-libvirt"
+    - "06-zookeeper"
+    - "07-kafka"
+    - "08-opendaylight"
+    - "09-monasca"
+  notify:
+    - Restart fluentd container
+
 - name: Copying over custom fluentd input config files
   template:
     src: "{{ item.path }}"
     dest: "{{ node_config_directory }}/fluentd/input/{{ item.path | basename }}"
     mode: "0660"
-  register: fluentd_input_custom
   when:
     - enable_fluentd | bool
   with_items: "{{ find_custom_fluentd_inputs.files }}"
@@ -87,16 +89,28 @@
                 ( elasticsearch_address != kolla_internal_vip_address )) and
                 not enable_monasca | bool }}"
 
+- name: Find custom fluentd output config files
+  local_action:
+    module: find
+    path: "{{ node_custom_config }}/fluentd/output"
+    pattern: "*.conf"
+  run_once: True
+  register: find_custom_fluentd_outputs
+  when:
+    - enable_fluentd | bool
+
 - name: Copying over fluentd output config files
+  vars:
+    customised_output_files: "{{ find_custom_fluentd_outputs.files | map(attribute='path') | map('basename') | list }}"
   template:
     src: "conf/output/{{ item.name }}.conf.j2"
     dest: "{{ node_config_directory }}/fluentd/output/{{ item.name }}.conf"
     mode: "0660"
   become: true
-  register: fluentd_output
   when:
     - enable_fluentd | bool
     - item.enabled | bool
+    - item.name ~ '.conf' not in customised_output_files
   with_items:
     - name: "00-local"
       enabled: true
@@ -123,40 +137,15 @@
   notify:
     - Restart fluentd container
 
-- name: Find custom fluentd output config files
-  local_action:
-    module: find
-    path: "{{ node_custom_config }}/fluentd/output"
-    pattern: "*.conf"
-  run_once: True
-  register: find_custom_fluentd_outputs
-  when:
-    - enable_fluentd | bool
-
 - name: Copying over custom fluentd output config files
   template:
     src: "{{ item.path }}"
     dest: "{{ node_config_directory }}/fluentd/output/{{ item.path | basename }}"
     mode: "0660"
   become: true
-  register: fluentd_output_custom
   when:
     - enable_fluentd | bool
   with_items: "{{ find_custom_fluentd_outputs.files }}"
-  notify:
-    - Restart fluentd container
-
-- name: Copying over fluentd format config files
-  template:
-    src: "conf/format/{{ item }}.conf.j2"
-    dest: "{{ node_config_directory }}/fluentd/format/{{ item }}.conf"
-    mode: "0660"
-  become: true
-  register: fluentd_format
-  with_items:
-    - "apache_access"
-    - "wsgi_access"
-  when: enable_fluentd | bool
   notify:
     - Restart fluentd container
 
@@ -170,31 +159,31 @@
   when:
     - enable_fluentd | bool
 
+- name: Copying over fluentd format config files
+  vars:
+    customised_format_files: "{{ find_custom_fluentd_format.files | map(attribute='path') | map('basename') | list }}"
+  template:
+    src: "conf/format/{{ item }}.conf.j2"
+    dest: "{{ node_config_directory }}/fluentd/format/{{ item }}.conf"
+    mode: "0660"
+  become: true
+  with_items:
+    - "apache_access"
+    - "wsgi_access"
+  when:
+    - enable_fluentd | bool
+    - item ~ '.conf' not in customised_format_files
+  notify:
+    - Restart fluentd container
+
 - name: Copying over custom fluentd format config files
   template:
     src: "{{ item.path }}"
     dest: "{{ node_config_directory }}/fluentd/format/{{ item.path | basename }}"
     mode: "0660"
-  register: fluentd_format_custom
   when:
     - enable_fluentd | bool
   with_items: "{{ find_custom_fluentd_format.files }}"
-  notify:
-    - Restart fluentd container
-
-- name: Copying over fluentd filter config files
-  template:
-    src: "conf/filter/{{ item.src }}.conf.j2"
-    dest: "{{ node_config_directory }}/fluentd/filter/{{ item.dest }}.conf"
-    mode: "0660"
-  become: true
-  register: fluentd_filter
-  with_items:
-    - src: 00-record_transformer
-      dest: 00-record_transformer
-    - src: "{{ '01-rewrite-0.14' if kolla_base_distro in ['debian', 'ubuntu'] else '01-rewrite-0.12' }}"
-      dest: 01-rewrite
-  when: enable_fluentd | bool
   notify:
     - Restart fluentd container
 
@@ -207,13 +196,31 @@
   register: find_custom_fluentd_filters
   when: enable_fluentd | bool
 
+- name: Copying over fluentd filter config files
+  vars:
+    customised_filter_files: "{{ find_custom_fluentd_filters.files | map(attribute='path') | map('basename') | list }}"
+  template:
+    src: "conf/filter/{{ item.src }}.conf.j2"
+    dest: "{{ node_config_directory }}/fluentd/filter/{{ item.dest }}.conf"
+    mode: "0660"
+  become: true
+  with_items:
+    - src: 00-record_transformer
+      dest: 00-record_transformer
+    - src: "{{ '01-rewrite-0.14' if kolla_base_distro in ['debian', 'ubuntu'] else '01-rewrite-0.12' }}"
+      dest: 01-rewrite
+  when:
+    - enable_fluentd | bool
+    - item.src ~ '.conf' not in customised_filter_files
+  notify:
+    - Restart fluentd container
+
 - name: Copying over custom fluentd filter config files
   template:
     src: "{{ item.path }}"
     dest: "{{ node_config_directory }}/fluentd/filter/{{ item.path | basename }}"
     mode: "0660"
   become: true
-  register: fluentd_filter_custom
   with_items: "{{ find_custom_fluentd_filters.files }}"
   when: enable_fluentd | bool
   notify:
@@ -225,7 +232,6 @@
     dest: "{{ node_config_directory }}/{{ item }}/td-agent.conf"
     mode: "0660"
   become: true
-  register: fluentd_td_agent
   with_items:
     - "fluentd"
   when: enable_fluentd | bool
@@ -238,7 +244,6 @@
     dest: "{{ node_config_directory }}/cron/logrotate/{{ item.name }}.conf"
     mode: "0660"
   become: true
-  register: cron_confs
   when: item.enabled | bool
   with_items:
     - { name: "ansible", enabled: "yes" }
@@ -263,6 +268,7 @@
     - { name: "grafana", enabled: "{{ enable_grafana }}" }
     - { name: "haproxy", enabled: "{{ enable_haproxy }}" }
     - { name: "heat", enabled: "{{ enable_heat }}" }
+    - { name: "horizon", enabled: "{{ enable_horizon }}" }
     - { name: "influxdb", enabled: "{{ enable_influxdb }}" }
     - { name: "ironic", enabled: "{{ enable_ironic }}" }
     - { name: "ironic-inspector", enabled: "{{ enable_ironic }}" }
@@ -276,6 +282,7 @@
     - { name: "magnum", enabled: "{{ enable_magnum }}" }
     - { name: "manila", enabled: "{{ enable_manila }}" }
     - { name: "mariadb", enabled: "{{ enable_mariadb }}" }
+    - { name: "masakari", enabled: "{{ enable_masakari }}" }
     - { name: "mistral", enabled: "{{ enable_mistral }}" }
     - { name: "monasca", enabled: "{{ enable_monasca }}" }
     - { name: "mongodb", enabled: "{{ enable_mongodb }}" }
@@ -286,6 +293,7 @@
     - { name: "opendaylight", enabled: "{{ enable_opendaylight }}" }
     - { name: "outward-rabbitmq", enabled: "{{ enable_outward_rabbitmq }}" }
     - { name: "panko", enabled: "{{ enable_panko }}" }
+    - { name: "qinling", enabled: "{{ enable_qinling }}" }
     - { name: "rabbitmq", enabled: "{{ enable_rabbitmq }}" }
     - { name: "rally", enabled: "{{ enable_rally }}" }
     - { name: "sahara", enabled: "{{ enable_sahara }}" }
@@ -329,7 +337,6 @@
     dimensions: "{{ item.value.dimensions }}"
     privileged: "{{ item.value.privileged | default(False) }}"
     environment: "{{ item.value.environment }}"
-  register: check_common_containers
   when:
     - kolla_action != "config"
     - item.value.enabled | bool

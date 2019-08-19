@@ -6,9 +6,9 @@ set -o errexit
 # Enable unbuffered output for Ansible in Jenkins.
 export PYTHONUNBUFFERED=1
 
-
 function test_openstack_logged {
     . /etc/kolla/admin-openrc.sh
+    . ~/openstackclient-venv/bin/activate
 
     openstack --debug compute service list
     openstack --debug network agent list
@@ -24,7 +24,7 @@ function test_openstack_logged {
     fi
     echo "SUCCESS: Server creation"
 
-    if [[ $ACTION = "ceph" ]] || [[ $ACTION == "cinder-lvm" ]]; then
+    if [[ $ACTION =~ "ceph" ]] || [[ $ACTION == "cinder-lvm" ]]; then
         echo "TESTING: Cinder volume attachment"
         openstack volume create --size 2 test_volume
         attempt=1
@@ -51,41 +51,33 @@ function test_openstack_logged {
             sleep 10
         done
         openstack server remove volume kolla_boot_test test_volume
+        attempt=1
+        while [[ $(openstack volume show test_volume -f value -c status) != "available" ]]; do
+            echo "Volume not detached yet"
+            attempt=$((attempt+1))
+            if [[ $attempt -eq 10 ]]; then
+                echo "Volume failed to detach"
+                openstack volume show test_volume
+                return 1
+            fi
+            sleep 10
+        done
+        openstack volume delete test_volume
         echo "SUCCESS: Cinder volume attachment"
     fi
 
     echo "TESTING: Server deletion"
     openstack server delete --wait kolla_boot_test
     echo "SUCCESS: Server deletion"
-
-    if echo $ACTION | grep -q "zun"; then
-        echo "TESTING: Zun"
-        openstack appcontainer service list
-        openstack appcontainer host list
-        openstack subnet set --no-dhcp demo-subnet
-        sudo docker pull alpine
-        sudo docker save alpine | openstack image create alpine --public --container-format docker --disk-format raw
-        openstack appcontainer run --name test alpine sleep 1000
-        attempt=1
-        while [[ $(openstack appcontainer show test -f value -c status) != "Running" ]]; do
-            echo "Container not running yet"
-            attempt=$((attempt+1))
-            if [[ $attempt -eq 10 ]]; then
-                echo "Container failed to start"
-                openstack appcontainer show test
-                return 1
-            fi
-            sleep 10
-        done
-        openstack appcontainer list
-        openstack appcontainer delete --force --stop test
-        echo "SUCCESS: Zun"
-    fi
 }
 
 function test_openstack {
     echo "Testing OpenStack"
-    test_openstack_logged > /tmp/logs/ansible/test-openstack 2>&1
+    log_file=/tmp/logs/ansible/test-openstack
+    if [[ -f $log_file ]]; then
+        log_file=${log_file}-upgrade
+    fi
+    test_openstack_logged > $log_file 2>&1
     result=$?
     if [[ $result != 0 ]]; then
         echo "Testing OpenStack failed. See ansible/test-openstack for details"

@@ -2,7 +2,7 @@
 kolla_base_distro: "{{ base_distro }}"
 kolla_install_type: "{{ install_type }}"
 network_interface: "{{ api_interface_name }}"
-docker_restart_policy: "never"
+docker_restart_policy: "no"
 
 # Use a random router id, otherwise it may result in the same router id
 # in the CI gate.
@@ -27,6 +27,9 @@ docker_namespace: "kolla"
 {% if need_build_image and is_previous_release %}
 # NOTE(mgoddard): Ensure that the insecure local registry is trusted, since it
 # will be the source of images during the upgrade.
+# NOTE(yoctozepto): this is required here for CI because we run templating
+# of docker systemd command only once, using the previous release when upgrading
+# also note: atm upgrade would conflict with the zun profile which uses this var
 docker_custom_option: "--insecure-registry {{ api_interface_address }}:4000"
 {% endif %}
 {% if not is_previous_release %}
@@ -36,34 +39,51 @@ openstack_release: "{{ previous_release }}"
 {% endif %}
 {% endif %}
 
-{% if scenario == "ceph" %}
+{% if is_ceph %}
 enable_ceph: "yes"
+enable_ceph_mds: "yes"
+enable_ceph_rgw: "yes"
+enable_ceph_rgw_keystone: "yes"
+enable_ceph_nfs: "yes"
 enable_cinder: "yes"
 ceph_pool_pg_num: 8
 ceph_pool_pgp_num: 8
 # This is experimental feature, disable if gate fail.
 # In multinode jobs without ceph rolling upgrade fails.
 glance_enable_rolling_upgrade: "yes"
+{% else %}
+# NOTE(yoctozepto): in case ceph is *not* used, we have to use the ansible node (primary)
+# to avoid random errors due to inventory randomness in Zuul (YAML format)
+# because we use primary as the API endpoint and there is currently no HAProxy in CI
+# and the default behavior is to pick the "first" node (issue affects only multinode)
+glance_api_hosts: ["{{ inventory_hostname }}"]
 {% endif %}
 
 {% if scenario == "cinder-lvm" %}
 enable_cinder: "yes"
 enable_cinder_backend_lvm: "yes"
-glance_api_hosts: ["{{ inventory_hostname }}"]
 {% endif %}
 
 {% if scenario == "zun" %}
 enable_zun: "yes"
 enable_kuryr: "yes"
 enable_etcd: "yes"
-docker_custom_option: " -H unix:///var/run/docker.sock -H tcp://{{ api_interface_address }}:2375 --cluster-store=etcd://{{ api_interface_address }}:2379 --cluster-advertise={{ api_interface_address }}:2375"
+docker_configure_for_zun: "yes"
 {% endif %}
 
 {% if scenario == "scenario_nfv" %}
-glance_api_hosts: ["{{ inventory_hostname }}"]
 enable_tacker: "yes"
 enable_neutron_sfc: "yes"
 enable_mistral: "yes"
 enable_redis: "yes"
 enable_barbican: "yes"
+{% endif %}
+
+{% if scenario == "ironic" %}
+enable_ironic: "yes"
+ironic_dnsmasq_dhcp_range: "10.42.0.2,10.42.0.254"
+{% endif %}
+
+{% if scenario == "masakari" %}
+enable_masakari: "yes"
 {% endif %}

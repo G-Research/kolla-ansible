@@ -7,6 +7,10 @@ copy_logs() {
 
     cp -rnL /var/lib/docker/volumes/kolla_logs/_data/* ${LOG_DIR}/kolla/
     cp -rnL /etc/kolla/* ${LOG_DIR}/kolla_configs/
+    # Don't save the IPA images.
+    rm ${LOG_DIR}/kolla_configs/config/ironic/ironic-agent.{kernel,initramfs}
+    mkdir ${LOG_DIR}/system_configs/
+    cp -rL /etc/{docker,systemd} ${LOG_DIR}/system_configs/
     cp -rvnL /var/log/* ${LOG_DIR}/system_logs/
 
 
@@ -37,13 +41,15 @@ copy_logs() {
     ps -eo user,pid,ppid,lwp,%cpu,%mem,size,rss,cmd > ${LOG_DIR}/system_logs/ps.txt
 
     # docker related information
-    (docker info && docker images && docker ps -a && docker network ls) > ${LOG_DIR}/system_logs/docker-info.txt
+    (docker info && docker images && docker ps -a && docker network ls && docker inspect $(docker ps -aq)) > ${LOG_DIR}/system_logs/docker-info.txt
 
     # ceph related logs
     if [[ $(docker ps --filter name=ceph_mon --format "{{.Names}}") ]]; then
-        docker exec ceph_mon ceph -s > ${LOG_DIR}/kolla/ceph/ceph_s.txt
-        docker exec ceph_mon ceph osd df > ${LOG_DIR}/kolla/ceph/ceph_osd_df.txt
-        docker exec ceph_mon ceph osd tree > ${LOG_DIR}/kolla/ceph/ceph_osd_tree.txt
+        docker exec ceph_mon ceph --connect-timeout 5 -s > ${LOG_DIR}/kolla/ceph/ceph_s.txt
+        # NOTE(yoctozepto): osd df removed on purpose to avoid CI POST_FAILURE due to a possible hang:
+        # as of ceph mimic it hangs when MON is operational but MGR not
+        # its usefulness is mediocre and having POST_FAILUREs is bad
+        docker exec ceph_mon ceph --connect-timeout 5 osd tree > ${LOG_DIR}/kolla/ceph/ceph_osd_tree.txt
     fi
 
     # bifrost related logs
@@ -60,6 +66,12 @@ copy_logs() {
     if [[ $(docker ps --filter name=haproxy --format "{{.Names}}") ]]; then
         mkdir -p ${LOG_DIR}/kolla/haproxy
         docker exec haproxy bash -c 'echo show stat | socat stdio /var/lib/kolla/haproxy/haproxy.sock' > ${LOG_DIR}/kolla/haproxy/stats.txt
+    fi
+
+    # FIXME: remove
+    if [[ $(docker ps -a --filter name=ironic_inspector --format "{{.Names}}") ]]; then
+        mkdir -p ${LOG_DIR}/kolla/ironic-inspector
+        ls -lR /var/lib/docker/volumes/ironic_inspector_dhcp_hosts > ${LOG_DIR}/kolla/ironic-inspector/var-lib-ls.txt
     fi
 
     for container in $(docker ps -a --format "{{.Names}}"); do

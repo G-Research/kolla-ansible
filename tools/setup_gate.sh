@@ -8,6 +8,22 @@ export PYTHONUNBUFFERED=1
 
 GIT_PROJECT_DIR=$(mktemp -d)
 
+function setup_openstack_clients {
+    # Prepare virtualenv for openstack deployment tests
+    virtualenv ~/openstackclient-venv
+    ~/openstackclient-venv/bin/pip install -U pip
+    ~/openstackclient-venv/bin/pip install python-openstackclient
+    if [[ $ACTION == zun ]]; then
+        ~/openstackclient-venv/bin/pip install python-zunclient
+    fi
+    if [[ $ACTION == ironic ]]; then
+        ~/openstackclient-venv/bin/pip install python-ironicclient
+    fi
+    if [[ $ACTION == masakari ]]; then
+        ~/openstackclient-venv/bin/pip install python-masakariclient
+    fi
+}
+
 function setup_config {
     # Use Infra provided pypi.
     # Wheel package mirror may be not compatible. So do not enable it.
@@ -27,7 +43,7 @@ EOF
         GATE_IMAGES="bifrost"
     fi
 
-    if [[ $ACTION == "ceph" ]]; then
+    if [[ $ACTION =~ "ceph" ]]; then
         GATE_IMAGES+=",ceph,cinder"
     fi
 
@@ -42,6 +58,12 @@ EOF
     if [[ $ACTION == "scenario_nfv" ]]; then
         GATE_IMAGES+=",tacker,mistral,redis,barbican"
     fi
+    if [[ $ACTION == "ironic" ]]; then
+        GATE_IMAGES+=",dnsmasq,ironic,iscsid"
+    fi
+    if [[ $ACTION == "masakari" ]]; then
+        GATE_IMAGES+=",masakari"
+    fi
 
     cat <<EOF | sudo tee /etc/kolla/kolla-build.conf
 [DEFAULT]
@@ -54,6 +76,7 @@ profile = gate
 registry = 127.0.0.1:4000
 push = true
 logs_dir = /tmp/logs/build
+template_override = /etc/kolla/template_overrides.j2
 
 [profiles]
 gate = ${GATE_IMAGES}
@@ -88,11 +111,16 @@ function detect_distro {
 function setup_ansible {
     RAW_INVENTORY=/etc/kolla/inventory
 
-    # TODO(SamYaple): Move to virtualenv
-    sudo -H pip install -U "ansible>=2.4" "docker>=2.0.0" "python-openstackclient" "ara<1.0.0" "cmd2<0.9.0"
-    if [[ $ACTION == "zun" ]]; then
-        sudo -H pip install -U "python-zunclient"
+    # Test latest ansible version on Ubuntu, minimum supported on others.
+    if [[ $BASE_DISTRO == "ubuntu" ]]; then
+        ANSIBLE_VERSION=">=2.5"
+    else
+        ANSIBLE_VERSION="<2.6"
     fi
+
+    # TODO(SamYaple): Move to virtualenv
+    sudo pip install -U "ansible${ANSIBLE_VERSION}" "ara<1.0.0"
+
     detect_distro
 
     sudo mkdir /etc/ansible
@@ -121,10 +149,11 @@ function prepare_images {
     popd
 }
 
+setup_openstack_clients
 
 setup_ansible
 setup_config
 setup_node
 
-tools/kolla-ansible -i ${RAW_INVENTORY} -e ansible_user=$USER bootstrap-servers > /tmp/logs/ansible/bootstrap-servers
+tools/kolla-ansible -i ${RAW_INVENTORY} -e ansible_user=$USER -vvv bootstrap-servers &> /tmp/logs/ansible/bootstrap-servers
 prepare_images

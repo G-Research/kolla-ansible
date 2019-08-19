@@ -8,7 +8,7 @@
     mode: "0770"
   become: true
   when:
-    - inventory_hostname in groups[item.value.group]
+    - item.value.host_in_groups | bool
     - item.value.enabled | bool
   with_dict: "{{ glance_services }}"
 
@@ -19,7 +19,7 @@
 
 - include_tasks: external_ceph.yml
   when:
-    - enable_ceph | bool == False
+    - not enable_ceph | bool
     - glance_backend_ceph | bool
 
 - name: Check if policies shall be overwritten
@@ -45,13 +45,12 @@
     dest: "{{ node_config_directory }}/{{ item.key }}/config.json"
     mode: "0660"
   become: true
-  register: glance_config_jsons
   when:
     - item.value.enabled | bool
-    - inventory_hostname in groups[item.value.group]
+    - item.value.host_in_groups | bool
   with_dict: "{{ glance_services }}"
   notify:
-    - Restart glance-api container
+    - Restart {{ item.key }} container
 
 - name: Copying over glance-*.conf
   vars:
@@ -66,13 +65,12 @@
     dest: "{{ node_config_directory }}/{{ item.key }}/{{ item.key }}.conf"
     mode: "0660"
   become: true
-  register: glance_confs
   when:
     - item.value.enabled | bool
-    - inventory_hostname in groups[item.value.group]
+    - item.value.host_in_groups | bool
   with_dict: "{{ glance_services }}"
   notify:
-    - Restart glance-api container
+    - Restart {{ item.key }} container
 
 - name: Copying over glance-cache.conf for glance_api
   vars:
@@ -86,10 +84,9 @@
     dest: "{{ node_config_directory }}/glance-api/glance-cache.conf"
     mode: "0660"
   become: true
-  register: glance_cache_conf
   when:
     - glance_api.enabled | bool
-    - inventory_hostname in groups[glance_api.group]
+    - glance_api.host_in_groups | bool
     - enable_glance_image_cache | bool
   notify:
     - Restart glance-api container
@@ -106,10 +103,9 @@
     dest: "{{ node_config_directory }}/glance-api/glance-swift.conf"
     mode: "0660"
   become: true
-  register: glance_swift_conf
   when:
     - glance_api.enabled | bool
-    - inventory_hostname in groups[glance_api.group]
+    - glance_api.host_in_groups | bool
     - glance_backend_swift | bool
   notify:
     - Restart glance-api container
@@ -120,14 +116,13 @@
     dest: "{{ node_config_directory }}/{{ item.key }}/{{ glance_policy_file }}"
     mode: "0660"
   become: true
-  register: glance_policy_overwriting
   when:
     - glance_policy_file is defined
-    - inventory_hostname in groups[item.value.group]
+    - item.value.host_in_groups | bool
     - item.value.enabled | bool
   with_dict: "{{ glance_services }}"
   notify:
-    - Restart glance-api container
+    - Restart {{ item.key }} container
 
 - name: Check glance containers
   become: true
@@ -139,11 +134,10 @@
     environment: "{{ item.value.environment | default(omit) }}"
     volumes: "{{ item.value.volumes|reject('equalto', '')|list }}"
     dimensions: "{{ item.value.dimensions }}"
-  register: check_glance_containers
   when:
     - kolla_action != "config"
-    - inventory_hostname in groups[item.value.group]
+    - item.value.host_in_groups | bool
     - item.value.enabled | bool
   with_dict: "{{ glance_services }}"
   notify:
-    - Restart glance-api container
+    - Restart {{ item.key }} container

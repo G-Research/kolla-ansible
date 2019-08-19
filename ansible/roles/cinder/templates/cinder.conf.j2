@@ -145,20 +145,6 @@ nas_secure_file_permissions = False
 nas_secure_file_operations = False
 {% endif %}
 
-{% if enable_cinder_backend_hnas_iscsi | bool %}
-[hnas-iscsi]
-volume_driver = cinder.volume.drivers.hitachi.hnas_iscsi.HNASISCSIDriver
-volume_backend_name = {{ hnas_iscsi_backend }}
-hnas_username = {{ hnas_iscsi_username }}
-hnas_password = {{ hnas_iscsi_password }}
-hnas_mgmt_ip0 = {{ hnas_iscsi_mgmt_ip0 }}
-hnas_chap_enabled = True
-
-hnas_svc0_volume_type = {{ hnas_iscsi_svc0_volume_type }}
-hnas_svc0_hdp = {{ hnas_iscsi_svc0_hdp }}
-hnas_svc0_iscsi_ip = {{ hnas_iscsi_svc0_ip }}
-{% endif %}
-
 {% if enable_cinder_backend_hnas_nfs | bool %}
 [hnas-nfs]
 volume_driver = cinder.volume.drivers.hitachi.hnas_nfs.HNASNFSDriver
@@ -220,9 +206,9 @@ auth_endpoint = {{ keystone_internal_url }}
 {% endif %}
 
 [coordination]
-{% if enable_redis | bool %}
-backend_url = redis://{% for host in groups['redis'] %}{% if host == groups['redis'][0] %}admin:{{ redis_master_password }}@{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:{{ redis_sentinel_port }}?sentinel=kolla{% else %}&sentinel_fallback={{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:{{ redis_sentinel_port }}{% endif %}{% endfor %}&socket_timeout=60&retry_on_timeout=yes
-{% elif enable_etcd | bool %}
+{% if cinder_coordination_backend == 'redis' %}
+backend_url = {{ redis_connection_string }}
+{% elif cinder_coordination_backend == 'etcd' %}
 # NOTE(jeffrey4l): python-etcd3 module do not support multi endpoint here.
 backend_url = etcd3://{{ hostvars[groups['etcd'][0]]['ansible_' + hostvars[groups['etcd'][0]]['api_interface']]['ipv4']['address'] }}:{{ etcd_client_port }}
 {% endif %}

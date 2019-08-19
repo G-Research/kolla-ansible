@@ -12,7 +12,6 @@
     dest: "{{ node_config_directory }}/{{ item.key }}/ceph.conf"
     mode: "0660"
   become: true
-  register: ceph_confs
   when:
     - item.value.enabled | bool
     - inventory_hostname in groups[item.value.group]
@@ -40,6 +39,7 @@
     pool_application: "rbd"
 
 - name: Pulling cephx keyring for cinder
+  become: true
   kolla_ceph_keyring:
     name: client.cinder
     caps: "{{ ceph_client_cinder_keyring_caps }}"
@@ -48,6 +48,7 @@
   run_once: True
 
 - name: Pulling cephx keyring for cinder-backup
+  become: true
   kolla_ceph_keyring:
     name: client.cinder-backup
     caps: "{{ ceph_client_cinder_backup_keyring_caps }}"
@@ -70,3 +71,5 @@
   when:
     - inventory_hostname in groups[item.service_name]
     - cinder_services[item.service_name].enabled | bool
+  notify:
+    - "Restart {{ item.service_name }} container"

@@ -13,7 +13,7 @@
   </rule>
   <rule>
     key     programname
-    pattern ^(nova-api|nova-compute|nova-compute-ironic|nova-conductor|nova-consoleauth|nova-manage|nova-novncproxy|nova-scheduler|nova-placement-api|placement-api|privsep-helper)$
+    pattern ^(nova-api|nova-compute|nova-compute-ironic|nova-conductor|nova-manage|nova-novncproxy|nova-scheduler|nova-placement-api|placement-api|privsep-helper)$
     tag openstack_python
   </rule>
   <rule>
@@ -165,5 +165,25 @@
     key     programname
     pattern ^(blazar-api|blazar-manager)$
     tag openstack_python
+  </rule>
+  <rule>
+    key     programname
+    pattern ^(qinling-engine|qinling-api)$
+    tag openstack_python
+  </rule>
+  <rule>
+    key     programname
+    pattern ^(monasca-api|monasca-notification|monasca-persister|agent-collector|agent-forwarder|agent-statsd)$
+    tag openstack_python
+  </rule>
+  <rule>
+    key     programname
+    pattern ^(masakari-engine|masakari-api)$
+    tag openstack_python
+  </rule>
+  <rule>
+    key     programname
+    pattern .+
+    tag unmatched
   </rule>
 </match>

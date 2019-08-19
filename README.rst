@@ -62,6 +62,7 @@ Kolla-Ansible deploys containers for the following OpenStack projects:
 - `Kuryr <https://docs.openstack.org/kuryr/latest/>`__
 - `Magnum <https://docs.openstack.org/magnum/latest/>`__
 - `Manila <https://docs.openstack.org/manila/latest/>`__
+- `Masakari <https://docs.openstack.org/masakari/latest/>`__
 - `Mistral <https://docs.openstack.org/mistral/latest/>`__
 - `Monasca <https://docs.openstack.org/monasca-api/latest/>`__
 - `Murano <https://docs.openstack.org/murano/latest/>`__
@@ -69,6 +70,7 @@ Kolla-Ansible deploys containers for the following OpenStack projects:
 - `Nova <https://docs.openstack.org/nova/latest/>`__
 - `Octavia <https://docs.openstack.org/octavia/latest/>`__
 - `Panko <https://docs.openstack.org/panko/latest/>`__
+- `Qinling <https://docs.openstack.org/qinling/latest/>`__
 - `Rally <https://docs.openstack.org/rally/latest/>`__
 - `Sahara <https://docs.openstack.org/sahara/latest/>`__
 - `Searchlight <https://docs.openstack.org/searchlight/latest/>`__

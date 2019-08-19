@@ -12,11 +12,8 @@ node_config: "{{ CONFIG_DIR | default('/etc/kolla') }}"
 # The directory to merge custom config files the kolla's config files
 node_custom_config: "/etc/kolla/config"
 
-# The project to generate configuration files for
-project: ""
-
 # The directory to store the config files on the destination node
-node_config_directory: "/etc/kolla/{{ project }}"
+node_config_directory: "/etc/kolla"
 
 # The group which own node_config_directory, you can use a non-root
 # user to deploy kolla
@@ -68,6 +65,9 @@ container_proxy:
 # to the api_interface.  Allow the bind address to be an override.
 api_interface_address: "{{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}"
 
+# This is used to get the ip corresponding to the storage_interface.
+storage_interface_address: "{{ hostvars[inventory_hostname]['ansible_' + storage_interface]['ipv4']['address'] }}"
+
 ################
 # Chrony options
 ################
@@ -94,16 +94,21 @@ docker_registry:
 docker_namespace: "kolla"
 docker_registry_username:
 docker_registry_insecure: "{{ 'yes' if docker_registry else 'no' }}"
+docker_runtime_directory: ""
 
 # Retention settings for Docker logs
 docker_log_max_file: 5
 docker_log_max_size: 50m
 
-# Valid options are [ never, on-failure, always, unless-stopped ]
+# Valid options are [ no, on-failure, always, unless-stopped ]
 docker_restart_policy: "unless-stopped"
 
-# '0' means unlimited retries
+# '0' means unlimited retries (applies only to 'on-failure' policy)
 docker_restart_policy_retry: "10"
+
+# Extra docker options for Zun
+docker_configure_for_zun: "no"
+docker_zun_options: -H fd:// -H tcp://{{ api_interface_address }}:2375 --cluster-store=etcd://{% for host in groups['etcd'] %}{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:{{ hostvars[host]['etcd_client_port'] }}{% if not loop.last %},{% endif %}{% endfor %}
 
 # Common options used throughout Docker
 docker_common_options:
@@ -121,6 +126,13 @@ docker_common_options:
 ####################
 # Dimension options for Docker Containers
 default_container_dimensions: {}
+
+
+#######################
+# Extra volumes options
+#######################
+# Extra volumes for Docker Containers
+default_extra_volumes: []
 
 ####################
 # keepalived options
@@ -293,6 +305,8 @@ mariadb_wsrep_port: "4567"
 mariadb_ist_port: "4568"
 mariadb_sst_port: "4444"
 
+masakari_api_port: "15868"
+
 memcached_port: "11211"
 
 mistral_api_port: "8989"
@@ -367,6 +381,8 @@ prometheus_openstack_exporter_port: "9198"
 prometheus_elasticsearch_exporter_port: "9108"
 
 qdrouterd_port: "31459"
+
+qinling_api_port: "7070"
 
 rabbitmq_port: "5672"
 rabbitmq_management_port: "15672"
@@ -508,6 +524,7 @@ enable_haproxy_memcached: "yes"
 enable_aodh: "no"
 enable_barbican: "no"
 enable_blazar: "no"
+# NOTE: This variable has been deprecated and will be removed in the U cycle.
 enable_cadf_notifications: "no"
 enable_ceilometer: "no"
 enable_ceilometer_ipmi: "no"
@@ -520,9 +537,8 @@ enable_ceph_dashboard: "{{ enable_ceph | bool }}"
 enable_chrony: "yes"
 enable_cinder: "no"
 enable_cinder_backup: "yes"
-enable_cinder_backend_hnas_iscsi: "no"
 enable_cinder_backend_hnas_nfs: "no"
-enable_cinder_backend_iscsi: "{{ enable_cinder_backend_lvm | bool or enable_cinder_backend_hnas_iscsi | bool or enable_cinder_backend_zfssa_iscsi | bool }}"
+enable_cinder_backend_iscsi: "{{ enable_cinder_backend_lvm | bool or enable_cinder_backend_zfssa_iscsi | bool }}"
 enable_cinder_backend_lvm: "no"
 enable_cinder_backend_nfs: "no"
 enable_cinder_backend_zfssa_iscsi: "no"
@@ -549,11 +565,12 @@ enable_horizon_ironic: "{{ enable_ironic | bool }}"
 enable_horizon_karbor: "{{ enable_karbor | bool }}"
 enable_horizon_magnum: "{{ enable_magnum | bool }}"
 enable_horizon_manila: "{{ enable_manila | bool }}"
+enable_horizon_masakari: "{{ enable_masakari | bool }}"
 enable_horizon_mistral: "{{ enable_mistral | bool }}"
 enable_horizon_murano: "{{ enable_murano | bool }}"
-enable_horizon_neutron_lbaas: "{{ enable_neutron_lbaas | bool }}"
 enable_horizon_neutron_vpnaas: "{{ enable_neutron_vpnaas | bool }}"
 enable_horizon_octavia: "{{ enable_octavia | bool }}"
+enable_horizon_qinling: "{{ enable_qinling | bool }}"
 enable_horizon_sahara: "{{ enable_sahara | bool }}"
 enable_horizon_searchlight: "{{ enable_searchlight | bool }}"
 enable_horizon_senlin: "{{ enable_senlin | bool }}"
@@ -564,7 +581,7 @@ enable_horizon_vitrage: "{{ enable_vitrage | bool }}"
 enable_horizon_watcher: "{{ enable_watcher | bool }}"
 enable_horizon_zun: "{{ enable_zun | bool }}"
 enable_hyperv: "no"
-enable_influxdb: "{{ enable_monasca | bool }}"
+enable_influxdb: "{{ enable_monasca | bool or (cloudkitty_storage_backend is defined and cloudkitty_storage_backend == 'influxdb') }}"
 enable_ironic: "no"
 enable_ironic_ipxe: "no"
 enable_ironic_neutron_agent: "{{ enable_neutron | bool and enable_ironic | bool }}"
@@ -579,6 +596,7 @@ enable_manila_backend_generic: "no"
 enable_manila_backend_hnas: "no"
 enable_manila_backend_cephfs_native: "no"
 enable_manila_backend_cephfs_nfs: "no"
+enable_masakari: "no"
 enable_mistral: "no"
 enable_monasca: "no"
 enable_mongodb: "no"
@@ -587,7 +605,6 @@ enable_murano: "no"
 enable_neutron_vpnaas: "no"
 enable_neutron_sriov: "no"
 enable_neutron_dvr: "no"
-enable_neutron_lbaas: "no"
 enable_neutron_fwaas: "no"
 enable_neutron_qos: "no"
 enable_neutron_agent_ha: "no"
@@ -608,6 +625,7 @@ enable_osprofiler: "no"
 enable_panko: "no"
 enable_placement: "{{ enable_nova }}"
 enable_qdrouterd: "{{ 'yes' if om_rpc_transport == 'amqp' else 'no' }}"
+enable_qinling: "no"
 enable_rally: "no"
 enable_redis: "no"
 enable_sahara: "no"
@@ -617,6 +635,7 @@ enable_skydive: "no"
 enable_solum: "no"
 enable_storm: "{{ enable_monasca | bool }}"
 enable_swift: "no"
+enable_swift_s3api: "no"
 enable_tacker: "no"
 enable_telegraf: "no"
 enable_tempest: "no"
@@ -675,13 +694,13 @@ skip_stop_containers: []
 ####################
 
 elasticsearch_address: "{{ kolla_internal_fqdn }}"
-enable_elasticsearch: "{{ 'yes' if enable_central_logging | bool or enable_freezer | bool or enable_osprofiler | bool or enable_skydive | bool or enable_monasca | bool else 'no' }}"
+enable_elasticsearch: "{{ 'yes' if enable_central_logging | bool or enable_osprofiler | bool or enable_skydive | bool or enable_monasca | bool else 'no' }}"
 enable_kibana: "{{ 'yes' if enable_central_logging | bool or enable_monasca | bool else 'no' }}"
 
 ####################
 # Redis options
 ####################
-redis_address: "{{ kolla_internal_fqdn }}"
+redis_connection_string: "redis://{% for host in groups['redis'] %}{% if host == groups['redis'][0] %}admin:{{ redis_master_password }}@{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:{{ redis_sentinel_port }}?sentinel=kolla{% else %}&sentinel_fallback={{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}:{{ redis_sentinel_port }}{% endif %}{% endfor %}&socket_timeout=60&retry_on_timeout=yes"
 
 ####################
 # Osprofiler options
@@ -689,7 +708,6 @@ redis_address: "{{ kolla_internal_fqdn }}"
 # valid values: ["elasticsearch", "redis"]
 osprofiler_backend: "elasticsearch"
 elasticsearch_connection_string: "elasticsearch://{{ elasticsearch_address }}:{{ elasticsearch_port }}"
-redis_connection_string: "redis://:{{ redis_master_password }}@{{ redis_address }}:{{ redis_port }}"
 osprofiler_backend_connection_string: "{{ redis_connection_string if osprofiler_backend == 'redis' else elasticsearch_connection_string }}"
 
 ####################
@@ -741,7 +759,15 @@ default_user_domain_id: "default"
 
 # Valid options are [ fernet ]
 keystone_token_provider: "fernet"
+# Keystone fernet token expiry in seconds. Default is 1 day.
 fernet_token_expiry: 86400
+# Keystone window to allow expired fernet tokens. Default is 2 days.
+fernet_token_allow_expired_window: 172800
+# Keystone fernet key rotation interval in seconds. Default is sum of token
+# expiry and allow expired window, 3 days. This ensures the minimum number
+# of keys are active. If this interval is lower than the sum of the token
+# expiry and allow expired window, multiple active keys will be necessary.
+fernet_key_rotation_interval: "{{ fernet_token_expiry + fernet_token_allow_expired_window }}"
 
 keystone_default_user_role: "_member_"
 
@@ -804,6 +830,8 @@ cinder_backend_ceph: "{{ enable_ceph }}"
 cinder_backend_vmwarevc_vmdk: "no"
 cinder_volume_group: "cinder-volumes"
 cinder_target_helper: "tgtadm"
+# Valid options are [ '', redis, etcd ]
+cinder_coordination_backend: "{{ 'redis' if enable_redis|bool else 'etcd' if enable_etcd|bool else '' }}"
 
 # Valid options are [ nfs, swift, ceph ]
 cinder_backup_driver: "ceph"
@@ -887,6 +915,12 @@ octavia_amp_boot_network_list:
 octavia_amp_secgroup_list:
 octavia_amp_flavor_id:
 
+#################
+# Qinling options
+#################
+# Configure qinling-engine certificates to authenticate with Kubernetes cluster.
+qinling_kubernetes_certificates: "no"
+
 ###################
 # Ceph options
 ###################
@@ -945,6 +979,16 @@ ceph_pool_pgp_num: 8
 # Set the store type for ceph OSD
 # Valid options are [ filestore, bluestore]
 ceph_osd_store_type: "bluestore"
+
+# Set the host type for ceph daemons
+# Valid options are [ IP, HOSTNAME, FQDN, INVENTORY ]
+# Note: For existing clusters, please don't modify this parameter. Otherwise,
+# the existing mon will be invalidated, and the existing osd crush map will
+# be changed.
+ceph_mon_host_type: "IP"
+ceph_mgr_host_type: "INVENTORY"
+ceph_osd_host_type: "IP"
+ceph_mds_host_type: "INVENTORY"
 
 #####################
 # VMware support
@@ -1012,3 +1056,28 @@ prometheus_elasticsearch_exporter_interval: "60s"
 # Vitrage
 ############
 enable_vitrage_prometheus_datasource: "{{ enable_prometheus | bool }}"
+
+####################
+# InfluxDB options
+####################
+influxdb_address: "{{ kolla_internal_fqdn }}"
+
+#########################
+# Internal Image options
+#########################
+distro_python_version_map: {
+  "centos": "2.7",
+  "debian": "3.7",
+  "oraclelinux": "2.7",
+  "rhel": "2.7",
+  "ubuntu": "3.6"
+}
+
+distro_python_version: "{{ distro_python_version_map[kolla_base_distro] }}"
+
+##########
+# Telegraf
+##########
+# Configure telegraf to use the docker daemon itself as an input for
+# telemetry data.
+telegraf_enable_docker_input: "no"

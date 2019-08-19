@@ -8,13 +8,13 @@
     environment:
       KOLLA_BOOTSTRAP:
       KOLLA_CONFIG_STRATEGY: "{{ config_strategy }}"
-      MON_IP: "{{ hostvars[inventory_hostname]['ansible_' + storage_interface]['ipv4']['address'] }}"
-      HOSTNAME: "{{ hostvars[inventory_hostname]['ansible_' + storage_interface]['ipv4']['address'] }}"
+      MON_IP: "{{ storage_interface_address }}"
+      HOSTNAME: "{{ ceph_mon_hostname }}"
     image: "{{ ceph_mon_image_full }}"
     labels:
       BOOTSTRAP:
     name: "bootstrap_ceph_mon"
-    restart_policy: "never"
+    restart_policy: no
     volumes:
       - "{{ node_config_directory }}/ceph-mon/:{{ container_config_directory }}/:ro"
       - "/etc/localtime:/etc/localtime:ro"

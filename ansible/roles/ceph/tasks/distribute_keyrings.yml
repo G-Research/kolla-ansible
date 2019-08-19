@@ -1,5 +1,6 @@
 ---
 - name: Fetching Ceph keyrings
+  become: true
   command: docker exec ceph_mon fetch_ceph_keys.py
   register: ceph_files_json
   changed_when: (ceph_files_json.stdout | from_json).changed
@@ -16,7 +17,8 @@
   bslurp:
     src: "{{ item.content }}"
     dest: "{{ node_config_directory }}/ceph-osd/{{ item.filename }}"
-    sha1: "{{ item.sha1 }}"
+    sha1: "{{ item.sha1 | default('')}}"
+    sha256: "{{ item.sha256 | default('')}}"
     mode: 0600
   with_items:
     - "{{ ceph_files['ceph.client.admin.keyring'] }}"
@@ -27,7 +29,8 @@
   bslurp:
     src: "{{ item.content }}"
     dest: "{{ node_config_directory }}/ceph-mon/{{ item.filename }}"
-    sha1: "{{ item.sha1 }}"
+    sha1: "{{ item.sha1 | default('')}}"
+    sha256: "{{ item.sha256 | default('')}}"
     mode: 0600
   with_items:
     - "{{ ceph_files['ceph.client.admin.keyring'] }}"
@@ -41,7 +44,8 @@
   bslurp:
     src: "{{ item.content }}"
     dest: "{{ node_config_directory }}/ceph-mgr/{{ item.filename }}"
-    sha1: "{{ item.sha1 }}"
+    sha1: "{{ item.sha1 | default('')}}"
+    sha256: "{{ item.sha256 | default('') }}"
     mode: 0600
   with_items:
     - "{{ ceph_files['ceph.client.admin.keyring'] }}"
@@ -52,7 +56,8 @@
   bslurp:
     src: "{{ item.content }}"
     dest: "{{ node_config_directory }}/ceph-rgw/{{ item.filename }}"
-    sha1: "{{ item.sha1 }}"
+    sha1: "{{ item.sha1 | default('')}}"
+    sha256: "{{ item.sha256 | default('')}}"
     mode: 0600
   with_items:
     - "{{ ceph_files['ceph.client.admin.keyring'] }}"
@@ -64,7 +69,8 @@
   bslurp:
     src: "{{ item.content }}"
     dest: "{{ node_config_directory }}/ceph-nfs/{{ item.filename }}"
-    sha1: "{{ item.sha1 }}"
+    sha1: "{{ item.sha1 | default('')}}"
+    sha256: "{{ item.sha256 | default('')}}"
     mode: 0600
   with_items:
     - "{{ ceph_files['ceph.client.admin.keyring'] }}"

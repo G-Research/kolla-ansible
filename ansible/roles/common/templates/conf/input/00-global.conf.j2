@@ -1,8 +1,9 @@
 #jinja2: trim_blocks: False
-{% set fluentd_dir = 'td-agent' if kolla_base_distro in ['ubuntu', 'debian'] else 'fluentd' %}
+{% set fluentd_dir = 'td-agent' if (kolla_base_distro in ['ubuntu', 'debian'] and ansible_architecture == 'x86_64') else 'fluentd' %}
 {% set services = [
     ( 'aodh', enable_aodh ),
     ( 'barbican', enable_barbican ),
+    ( 'blazar', enable_blazar ),
     ( 'ceilometer', enable_ceilometer ),
     ( 'cinder', enable_cinder ),
     ( 'cloudkitty', enable_cloudkitty ),
@@ -21,6 +22,7 @@
     ( 'kuryr', enable_kuryr ),
     ( 'magnum', enable_magnum ),
     ( 'manila', enable_manila ),
+    ( 'masakari', enable_masakari ),
     ( 'mistral', enable_mistral ),
     ( 'monasca', enable_monasca ),
     ( 'mongodb', enable_mongodb ),
@@ -29,6 +31,7 @@
     ( 'nova', enable_nova ),
     ( 'octavia', enable_octavia ),
     ( 'panko', enable_panko ),
+    ( 'qinling', enable_qinling ),
     ( 'rally', enable_rally ),
     ( 'sahara', enable_sahara ),
     ( 'searchlight', enable_searchlight ),
@@ -42,7 +45,10 @@
 <source>
   @type tail
   path {% for service, enabled in services if enabled | bool %}/var/log/kolla/{{ service }}/*.log{% if not loop.last %},{% endif %}{% endfor %}
-  exclude_path ["/var/log/kolla/neutron/dnsmasq.log",
+  exclude_path ["/var/log/kolla/monasca/agent*.log",
+                "/var/log/kolla/monasca/grafana.log",
+                "/var/log/kolla/monasca/monasca-log-api.log",
+                "/var/log/kolla/neutron/dnsmasq.log",
                 "/var/log/kolla/*/*-access.log",
                 "/var/log/kolla/*/*-error.log"]
   pos_file /var/run/{{ fluentd_dir }}/kolla-openstack.pos

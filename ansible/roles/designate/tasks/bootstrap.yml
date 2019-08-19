@@ -1,5 +1,6 @@
 ---
 - name: Creating Designate databases
+  become: true
   kolla_toolbox:
     module_name: mysql_db
     module_args:
@@ -8,7 +9,6 @@
       login_user: "{{ database_user }}"
       login_password: "{{ database_password }}"
       name: "{{ item }}"
-  register: database
   run_once: True
   delegate_to: "{{ groups['designate-central'][0] }}"
   with_items:
@@ -18,6 +18,7 @@
     - not use_preconfigured_databases | bool
 
 - name: Creating Designate databases user and setting permissions
+  become: true
   kolla_toolbox:
     module_name: mysql_user
     module_args:
@@ -44,4 +45,3 @@
   no_log: true
 
 - include_tasks: bootstrap_service.yml
-  when: database.changed or use_preconfigured_databases | bool

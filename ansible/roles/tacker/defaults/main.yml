@@ -7,11 +7,7 @@ tacker_services:
     group: "tacker-server"
     enabled: true
     image: "{{ tacker_server_image_full }}"
-    volumes:
-      - "{{ node_config_directory }}/tacker-server/:{{ container_config_directory }}/:ro"
-      - "{{ kolla_dev_repos_directory ~ '/tacker/tacker:/var/lib/kolla/venv/lib/python2.7/site-packages/tacker' if tacker_dev_mode | bool else '' }}"
-      - "/etc/localtime:/etc/localtime:ro"
-      - "kolla_logs:/var/log/kolla/"
+    volumes: "{{ tacker_server_default_volumes + tacker_server_extra_volumes }}"
     dimensions: "{{ tacker_server_dimensions }}"
     haproxy:
       tacker_server:
@@ -29,11 +25,7 @@ tacker_services:
     group: "tacker-conductor"
     enabled: true
     image: "{{ tacker_conductor_image_full }}"
-    volumes:
-      - "{{ node_config_directory }}/tacker-conductor/:{{ container_config_directory }}/:ro"
-      - "{{ kolla_dev_repos_directory ~ '/tacker/tacker:/var/lib/kolla/venv/lib/python2.7/site-packages/tacker' if tacker_dev_mode | bool else '' }}"
-      - "/etc/localtime:/etc/localtime:ro"
-      - "kolla_logs:/var/log/kolla/"
+    volumes: "{{ tacker_conductor_default_volumes + tacker_conductor_extra_volumes }}"
     dimensions: "{{ tacker_conductor_dimensions }}"
 
 ####################
@@ -60,6 +52,21 @@ tacker_conductor_image_full: "{{ tacker_conductor_image }}:{{ tacker_conductor_t
 tacker_server_dimensions: "{{ default_container_dimensions }}"
 tacker_conductor_dimensions: "{{ default_container_dimensions }}"
 
+tacker_server_default_volumes:
+  - "{{ node_config_directory }}/tacker-server/:{{ container_config_directory }}/:ro"
+  - "{{ kolla_dev_repos_directory ~ '/tacker/tacker:/var/lib/kolla/venv/lib/python2.7/site-packages/tacker' if tacker_dev_mode | bool else '' }}"
+  - "/etc/localtime:/etc/localtime:ro"
+  - "kolla_logs:/var/log/kolla/"
+tacker_conductor_default_volumes:
+  - "{{ node_config_directory }}/tacker-conductor/:{{ container_config_directory }}/:ro"
+  - "{{ kolla_dev_repos_directory ~ '/tacker/tacker:/var/lib/kolla/venv/lib/python2.7/site-packages/tacker' if tacker_dev_mode | bool else '' }}"
+  - "/etc/localtime:/etc/localtime:ro"
+  - "kolla_logs:/var/log/kolla/"
+
+tacker_extra_volumes: "{{ default_extra_volumes }}"
+tacker_server_extra_volumes: "{{ tacker_extra_volumes }}"
+tacker_conductor_extra_volumes: "{{ tacker_extra_volumes }}"
+
 ####################
 # OpenStack
 ####################
@@ -80,3 +87,12 @@ tacker_git_repository: "{{ kolla_dev_repos_git }}/{{ project_name }}"
 tacker_dev_repos_pull: "{{ kolla_dev_repos_pull }}"
 tacker_dev_mode: "{{ kolla_dev_mode }}"
 tacker_source_version: "{{ kolla_source_version }}"
+
+####################
+# Notifications
+####################
+tacker_notification_topics:
+  - name: notifications
+    enabled: "{{ enable_ceilometer | bool }}"
+
+tacker_enabled_notification_topics: "{{ tacker_notification_topics | selectattr('enabled', 'equalto', true) | list }}"

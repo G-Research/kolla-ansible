@@ -7,11 +7,7 @@ cloudkitty_services:
     group: "cloudkitty-api"
     image: "{{ cloudkitty_api_image_full }}"
     enabled: True
-    volumes:
-      - "{{ node_config_directory }}/cloudkitty-api/:{{ container_config_directory }}/:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-      - "kolla_logs:/var/log/kolla/"
-      - "{{ kolla_dev_repos_directory ~ '/cloudkitty/cloudkitty:/var/lib/kolla/venv/lib/python2.7/site-packages/cloudkitty' if cloudkitty_dev_mode | bool else '' }}"
+    volumes: "{{ cloudkitty_api_default_volumes + cloudkitty_api_extra_volumes }}"
     dimensions: "{{ cloudkitty_api_dimensions }}"
     haproxy:
       cloudkitty_api:
@@ -29,11 +25,7 @@ cloudkitty_services:
     group: "cloudkitty-processor"
     image: "{{ cloudkitty_processor_image_full }}"
     enabled: True
-    volumes:
-      - "{{ node_config_directory }}/cloudkitty-processor/:{{ container_config_directory }}/:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-      - "kolla_logs:/var/log/kolla/"
-      - "{{ kolla_dev_repos_directory ~ '/cloudkitty/cloudkitty:/var/lib/kolla/venv/lib/python2.7/site-packages/cloudkitty' if cloudkitty_dev_mode | bool else '' }}"
+    volumes: "{{ cloudkitty_processor_default_volumes + cloudkitty_processor_extra_volumes }}"
     dimensions: "{{ cloudkitty_processor_dimensions }}"
 
 
@@ -62,6 +54,20 @@ cloudkitty_processor_image_full: "{{ cloudkitty_processor_image }}:{{ cloudkitty
 cloudkitty_processor_dimensions: "{{ default_container_dimensions }}"
 cloudkitty_api_dimensions: "{{ default_container_dimensions }}"
 
+cloudkitty_api_default_volumes:
+  - "{{ node_config_directory }}/cloudkitty-api/:{{ container_config_directory }}/:ro"
+  - "/etc/localtime:/etc/localtime:ro"
+  - "kolla_logs:/var/log/kolla/"
+  - "{{ kolla_dev_repos_directory ~ '/cloudkitty/cloudkitty:/var/lib/kolla/venv/lib/python2.7/site-packages/cloudkitty' if cloudkitty_dev_mode | bool else '' }}"
+cloudkitty_processor_default_volumes:
+  - "{{ node_config_directory }}/cloudkitty-processor/:{{ container_config_directory }}/:ro"
+  - "/etc/localtime:/etc/localtime:ro"
+  - "kolla_logs:/var/log/kolla/"
+  - "{{ kolla_dev_repos_directory ~ '/cloudkitty/cloudkitty:/var/lib/kolla/venv/lib/python2.7/site-packages/cloudkitty' if cloudkitty_dev_mode | bool else '' }}"
+
+cloudkitty_extra_volumes: "{{ default_extra_volumes }}"
+cloudkitty_processor_extra_volumes: "{{ cloudkitty_extra_volumes }}"
+cloudkitty_api_extra_volumes: "{{ cloudkitty_extra_volumes }}"
 
 ####################
 # OpenStack
@@ -82,7 +88,6 @@ openstack_cloudkitty_auth: "{{ openstack_auth }}"
 ####################
 cloudkitty_openstack_keystone_default_role: "rating"
 
-
 ####################
 # Kolla
 ####################
@@ -90,3 +95,30 @@ cloudkitty_git_repository: "{{ kolla_dev_repos_git }}/{{ project_name }}"
 cloudkitty_dev_repos_pull: "{{ kolla_dev_repos_pull }}"
 cloudkitty_dev_mode: "{{ kolla_dev_mode }}"
 cloudkitty_source_version: "{{ kolla_source_version }}"
+cloudkitty_custom_metrics_yaml_file: "metrics.yml"
+
+####################
+# Storage backend
+####################
+# Valid options are 'sqlalchemy' or 'influxdb'. The default value in
+# Kolla-ansible is 'sqlalchemy' (for backwards compatibility).
+# When cloudkitty_storage_backend is define with "influxdb" as its value,
+# we also trigger the deployment of Influxdb via Kolla-ansible.
+# Also, when using 'influxdb' as the backend, we trigger the configuration/use
+# of Cloudkitty storage backend version 2.
+cloudkitty_storage_backend: "sqlalchemy"
+
+# InfluxDB retention policy to use (defaults to autogen).
+# cloudkitty_influxdb_retention_policy: "autogen"
+
+# Set to true to use SSL for InfluxDB connections.
+# cloudkitty_influxdb_use_ssl: false
+
+# Path of the CA certificate to trust for HTTPS connections.
+# cloudkitty_influxdb_cafile: "/full/qualified/path/to/CAs/certificates"
+
+# Set to true to authorize insecure HTTPS connections to InfluxDB.
+# This means, HTTPS connections without validating the certificate used by InfluxDB
+# cloudkitty_influxdb_insecure_connections: false
+
+cloudkitty_influxdb_name: "cloudkitty"

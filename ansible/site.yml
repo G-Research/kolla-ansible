@@ -53,6 +53,7 @@
         - enable_magnum_{{ enable_magnum | bool }}
         - enable_manila_{{ enable_manila | bool }}
         - enable_mariadb_{{ enable_mariadb | bool }}
+        - enable_masakari_{{ enable_masakari | bool }}
         - enable_memcached_{{ enable_memcached | bool }}
         - enable_mistral_{{ enable_mistral | bool }}
         - enable_monasca_{{ enable_monasca | bool }}
@@ -69,6 +70,7 @@
         - enable_placement_{{ enable_placement | bool }}
         - enable_prometheus_{{ enable_prometheus | bool }}
         - enable_qdrouterd_{{ enable_qdrouterd | bool }}
+        - enable_qinling_{{ enable_qinling | bool }}
         - enable_rabbitmq_{{ enable_rabbitmq | bool }}
         - enable_rally_{{ enable_rally | bool }}
         - enable_redis_{{ enable_redis | bool }}
@@ -244,6 +246,11 @@
           tags: mariadb
           when: enable_mariadb | bool
         - include_role:
+            role: masakari
+            tasks_from: loadbalancer
+          tags: masakari
+          when: enable_masakari | bool
+        - include_role:
             role: memcached
             tasks_from: loadbalancer
           tags: memcached
@@ -302,6 +309,11 @@
             tasks_from: loadbalancer
           tags: prometheus
           when: enable_prometheus | bool
+        - include_role:
+            role: qinling
+            tasks_from: loadbalancer
+          tags: qinling
+          when: enable_qinling | bool
         - include_role:
             role: rabbitmq
             tasks_from: loadbalancer
@@ -702,7 +714,6 @@
     - compute
     - nova-api
     - nova-conductor
-    - nova-consoleauth
     - nova-novncproxy
     - nova-scheduler
     - '&enable_nova_True'
@@ -764,7 +775,6 @@
     - neutron-server
     - neutron-dhcp-agent
     - neutron-l3-agent
-    - neutron-lbaas-agent
     - ironic-neutron-agent
     - neutron-metadata-agent
     - neutron-metering-agent
@@ -862,6 +872,18 @@
     - { role: mistral,
         tags: mistral,
         when: enable_mistral | bool }
+
+- name: Apply role qinling
+  gather_facts: false
+  hosts:
+    - qinling-api
+    - qinling-engine
+    - '&enable_qinling_True'
+  serial: '{{ kolla_serial|default("0") }}'
+  roles:
+    - { role: qinling,
+        tags: qinling,
+        when: enable_qinling | bool }
 
 - name: Apply role sahara
   gather_facts: false
@@ -1225,3 +1247,16 @@
     - { role: blazar,
         tags: blazar,
         when: enable_blazar | bool }
+
+- name: Apply role masakari
+  gather_facts: false
+  hosts:
+    - masakari-api
+    - masakari-engine
+    - masakari-monitors
+    - '&enable_masakari_True'
+  serial: '{{ kolla_serial|default("0") }}'
+  roles:
+    - { role: masakari,
+        tags: masakari,
+        when: enable_masakari | bool }

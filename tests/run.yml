@@ -1,24 +1,26 @@
 ---
 - hosts: all
-  vars:
-    kolla_ansible_local_src_dir: "{{ zuul.executor.work_root }}/src/{{ zuul.project.canonical_hostname }}/openstack/kolla-ansible"
   tasks:
+    # NOTE(yoctozepto): setting vars as facts for all to have them around in all the plays
+    - set_fact:
+        kolla_inventory_path: "/etc/kolla/inventory"
+        logs_dir: "/tmp/logs"
+        kolla_ansible_src_dir: "{{ ansible_env.PWD }}/src/{{ zuul.project.canonical_hostname }}/openstack/kolla-ansible"
+        kolla_ansible_local_src_dir: "{{ zuul.executor.work_root }}/src/{{ zuul.project.canonical_hostname }}/openstack/kolla-ansible"
+        need_build_image: false
+        build_image_tag: "change_{{ zuul.change | default('none') }}"
+        is_upgrade: "{{ 'upgrade' in scenario }}"
+        is_ceph: "{{ 'ceph' in scenario }}"
+
     - name: Prepare disks for Ceph or LVM
       script: "setup_disks.sh {{ disk_type }}"
-      when: scenario in ["ceph", "cinder-lvm"]
+      when: scenario == "cinder-lvm" or is_ceph
       become: true
       vars:
-        disk_type: "{{ ceph_storetype if scenario == 'ceph' else 'cinder-lvm' }}"
+        disk_type: "{{ ceph_storetype if is_ceph else 'cinder-lvm' }}"
         ceph_storetype: "{{ hostvars[inventory_hostname].get('ceph_osd_storetype') }}"
 
 - hosts: primary
-  vars:
-    kolla_inventory_path: "/etc/kolla/inventory"
-    logs_dir: "/tmp/logs"
-    kolla_ansible_src_dir: "{{ ansible_env.PWD }}/src/{{ zuul.project.canonical_hostname }}/openstack/kolla-ansible"
-    kolla_ansible_local_src_dir: "{{ zuul.executor.work_root }}/src/{{ zuul.project.canonical_hostname }}/openstack/kolla-ansible"
-    need_build_image: false
-    build_image_tag: "change_{{ zuul.change | default('none') }}"
   tasks:
     # FIXME: in multi node env, api_interface may be different on each node.
     - name: detect api_interface_name variable
@@ -41,13 +43,22 @@
         - item.branch == zuul.branch
       with_items: "{{ zuul['items'] }}"
 
+    # NOTE(yoctozepto): required to template template_overrides.j2 for Zuul
+    - name: Include kolla Zuul vars if building new images
+      include_vars:
+        file: "{{ zuul.executor.work_root }}/src/opendev.org/openstack/kolla/tests/vars/zuul.yml"
+      when: need_build_image  # only then kolla sources are available (and used)
+
     # NOTE(mgoddard): This only affects the remote copy of the repo, not the
     # one on the executor.
     - name: checkout the previous kolla-ansible branch
-      command:
-        cmd: "git checkout stable/{{ previous_release | lower }}"
+      shell:
+        cmd: |
+          git checkout stable/{{ previous_release | lower }}
+          echo "kolla-ansible checked out to:"
+          git log --pretty=oneline  -1
         chdir: "{{ kolla_ansible_src_dir }}"
-      when: scenario == "upgrade"
+      when: is_upgrade
 
     - name: ensure /etc/kolla exists
       file:
@@ -56,6 +67,13 @@
         mode: 0777
       become: true
 
+    # NOTE(yoctozepto): required to customize kolla to use local mirrors
+    - name: Template template_overrides.j2
+      template:
+        src: "{{ zuul.executor.work_root }}/src/opendev.org/openstack/kolla/tests/templates/template_overrides.j2"
+        dest: /etc/kolla/template_overrides.j2
+      when: need_build_image  # only then kolla sources are available (and used)
+
     # Use the initial repo to generate config files. For upgrade jobs, this
     # repo is only available on the remote node, so use the remote-template
     # role.
@@ -63,7 +81,7 @@
       include_role:
         role: remote-template
       vars:
-        is_previous_release: "{{ scenario == 'upgrade' }}"
+        is_previous_release: "{{ is_upgrade }}"
         infra_dockerhub_mirror: "http://{{ zuul_site_mirror_fqdn }}:8082/"
         # Role variables.
         remote_template_src: "{{ kolla_ansible_src_dir }}/{{ item.src }}"
@@ -83,16 +101,37 @@
         # nova-compute.conf
         - src: "tests/templates/nova-compute-overrides.j2"
           dest: /etc/kolla/config/nova/nova-compute.conf
-          when: scenario != "bifrost"
+          when: "{{ scenario != 'bifrost' }}"
         # ceph.conf
         - src: "tests/templates/ceph-overrides.j2"
           dest: /etc/kolla/config/ceph.conf
-          when: scenario == "ceph"
+          when: "{{ is_ceph }}"
         # bifrost/dib.yml
         - src: "tests/templates/bifrost-dib-overrides.j2"
           dest: /etc/kolla/config/bifrost/dib.yml
-          when: scenario == "bifrost"
+          when: "{{ scenario == 'bifrost' }}"
+        - src: "tests/templates/ironic-overrides.j2"
+          dest: /etc/kolla/config/ironic.conf
+          when: "{{ scenario == 'ironic' }}"
       when: item.when | default(true)
+
+    - block:
+        - name: ensure ironic config directory exists
+          file:
+            path: /etc/kolla/config/ironic
+            state: directory
+            mode: 0777
+
+        - name: download Ironic Python Agent (IPA) images
+          get_url:
+            url: "https://tarballs.openstack.org/ironic-python-agent/tinyipa/files/{{ item.src }}"
+            dest: "/etc/kolla/config/ironic/{{ item.dest }}"
+          with_items:
+            - src: "tinyipa-{{ zuul.branch | replace('/', '-') }}.gz"
+              dest: ironic-agent.initramfs
+            - src: "tinyipa-{{ zuul.branch | replace('/', '-') }}.vmlinuz"
+              dest: ironic-agent.kernel
+      when: scenario == "ironic"
 
     - name: install kolla-ansible requirements
       pip:
@@ -167,7 +206,14 @@
             chdir: "{{ kolla_ansible_src_dir }}"
           environment:
             ACTION: "{{ scenario }}"
-          when: scenario not in ['scenario_nfv']
+          when: scenario not in ['ironic', 'scenario_nfv']
+
+        - name: Run test-zun.sh script
+          shell:
+            cmd: tests/test-zun.sh
+            executable: /bin/bash
+            chdir: "{{ kolla_ansible_src_dir }}"
+          when: "{{ 'zun' in scenario }}"
 
         - name: Run test-scenario-nfv.sh script
           script:
@@ -176,6 +222,20 @@
             chdir: "{{ kolla_ansible_src_dir }}"
           when: scenario == "scenario_nfv"
 
+        - name: Run test-ironic.sh script
+          script:
+            cmd: test-ironic.sh
+            executable: /bin/bash
+            chdir: "{{ kolla_ansible_src_dir }}"
+          when: scenario == "ironic"
+
+        - name: Run test-masakari.sh script
+          script:
+            cmd: test-masakari.sh
+            executable: /bin/bash
+            chdir: "{{ kolla_ansible_src_dir }}"
+          when: scenario == "masakari"
+
         - name: Run reconfigure.sh script
           script:
             cmd: reconfigure.sh
@@ -183,22 +243,39 @@
             chdir: "{{ kolla_ansible_src_dir }}"
           environment:
             ACTION: "{{ scenario }}"
-          when: scenario != "upgrade"
+          when: not is_upgrade
       when: scenario != "bifrost"
 
-    # Upgrade: update config.
-    - block:
-        - name: Run check-failure.sh script
-          script:
-            cmd: check-failure.sh
+# NOTE(yoctozepto): each host checks itself
+- hosts: all
+  tasks:
+    - name: Pre-upgrade sanity checks
+      block:
+        - name: Run pre-upgrade check-failure.sh script
+          shell:
+            cmd: tests/check-failure.sh
             executable: /bin/bash
             chdir: "{{ kolla_ansible_src_dir }}"
 
+        - name: Run pre-upgrade check-config.sh script
+          shell:
+            cmd: tests/check-config.sh
+            executable: /bin/bash
+            chdir: "{{ kolla_ansible_src_dir }}"
+      when: is_upgrade
+
+- hosts: primary
+  tasks:
+    # Upgrade: update config.
+    - block:
         # NOTE(mgoddard): This only affects the remote copy of the repo, not the
         # one on the executor.
         - name: checkout the current kolla-ansible branch
-          command:
-            cmd: "git checkout {{ zuul.branch }}"
+          shell:
+            cmd: |
+              git checkout {{ zuul.branch }}
+              echo "kolla-ansible checked out to:"
+              git log --pretty=oneline  -1
             chdir: "{{ kolla_ansible_src_dir }}"
 
         # Use the new kolla-ansible repo to generate config files.
@@ -223,7 +300,7 @@
             # ceph.conf
             - src: "tests/templates/ceph-overrides.j2"
               dest: /etc/kolla/config/ceph.conf
-              when: "'ceph' in scenario"
+              when: "{{ is_ceph }}"
           when: item.when | default(true)
 
         - name: upgrade kolla-ansible requirements
@@ -268,7 +345,14 @@
             chdir: "{{ kolla_ansible_src_dir }}"
           environment:
             ACTION: "{{ scenario }}"
-      when: scenario == "upgrade"
+
+        - name: Run test-zun.sh script
+          shell:
+            cmd: tests/test-zun.sh
+            executable: /bin/bash
+            chdir: "{{ kolla_ansible_src_dir }}"
+          when: "{{ 'zun' in scenario }}"
+      when: is_upgrade
 
     # Bifrost testing.
     - block:
@@ -291,6 +375,9 @@
             chdir: "{{ kolla_ansible_src_dir }}"
       when: scenario == "bifrost"
 
+# NOTE(yoctozepto): each host checks itself
+- hosts: all
+  tasks:
     - name: Run check-failure.sh script
       shell:
         cmd: tests/check-failure.sh

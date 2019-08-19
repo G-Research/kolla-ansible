@@ -1,5 +1,6 @@
 ---
 - name: Looking up disks to bootstrap for Ceph OSDs
+  become: true
   command: docker exec -t kolla_toolbox sudo -E ansible localhost
     -m find_disks
     -a "partition_name={{ partition_name_osd_bootstrap }} match_mode='prefix' use_udev={{ kolla_ceph_use_udev }}"
@@ -12,6 +13,7 @@
     osds_bootstrap: "{{ (osd_lookup.stdout.split('localhost | SUCCESS => ')[1]|from_json).disks|from_json }}"
 
 - name: Looking up disks to bootstrap for Ceph Cache OSDs
+  become: true
   command: docker exec -t kolla_toolbox sudo -E ansible localhost
     -m find_disks
     -a "partition_name={{ partition_name_cache_bootstrap }} match_mode='prefix' use_udev={{ kolla_ceph_use_udev }}"
@@ -57,7 +59,7 @@
       USE_EXTERNAL_JOURNAL: "{{ item.1.external_journal | bool }}"
       OSD_FILESYSTEM: "{{ ceph_osd_filesystem }}"
       OSD_INITIAL_WEIGHT: "{{ osd_initial_weight }}"
-      HOSTNAME: "{{ hostvars[inventory_hostname]['ansible_' + storage_interface]['ipv4']['address'] }}"
+      HOSTNAME: "{{ ceph_osd_hostname }}"
       OSD_STORETYPE: "{{ ceph_osd_store_type }}"
       OSD_BS_DEV: "{{ item.1.device | default('') }}"
       OSD_BS_LABEL: "{{ item.1.partition_label | default('') }}"
@@ -76,7 +78,7 @@
       BOOTSTRAP:
     name: "bootstrap_osd_{{ item.0 }}"
     privileged: True
-    restart_policy: "never"
+    restart_policy: no
     volumes:
       - "{{ node_config_directory }}/ceph-osd/:{{ container_config_directory }}/:ro"
       - "/etc/localtime:/etc/localtime:ro"
@@ -118,7 +120,7 @@
       USE_EXTERNAL_JOURNAL: "{{ item.1.external_journal | bool }}"
       OSD_FILESYSTEM: "{{ ceph_osd_filesystem }}"
       OSD_INITIAL_WEIGHT: "{{ osd_initial_weight }}"
-      HOSTNAME: "{{ hostvars[inventory_hostname]['ansible_' + storage_interface]['ipv4']['address'] }}"
+      HOSTNAME: "{{ ceph_osd_hostname }}"
       OSD_STORETYPE: "{{ ceph_osd_store_type }}"
       OSD_BS_DEV: "{{ item.1.device | default('') }}"
       OSD_BS_LABEL: "{{ item.1.partition_label | default('') }}"
@@ -137,7 +139,7 @@
       BOOTSTRAP:
     name: "bootstrap_osd_cache_{{ item.0 }}"
     privileged: True
-    restart_policy: "never"
+    restart_policy: no
     volumes:
       - "{{ node_config_directory }}/ceph-osd/:{{ container_config_directory }}/:ro"
       - "/etc/localtime:/etc/localtime:ro"
