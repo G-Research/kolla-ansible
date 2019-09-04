@@ -92,7 +92,7 @@ prometheus_services:
     group: "prometheus-blackbox-exporter"
     enabled: "{{ enable_prometheus_blackbox_exporter | bool }}"
     image: "{{ prometheus_blackbox_exporter_image_full }}"
-    volumes: "{{ prometheus_elasticsearch_exporter_default_volumes + prometheus_blackbox_exporter_extra_volumes }}"
+    volumes: "{{ prometheus_blackbox_exporter_default_volumes + prometheus_blackbox_exporter_extra_volumes }}"
     dimensions: "{{ prometheus_blackbox_exporter_dimensions }}"
 
 ####################
