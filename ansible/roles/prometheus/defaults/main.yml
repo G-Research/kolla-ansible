@@ -87,11 +87,33 @@ prometheus_services:
     image: "{{ prometheus_elasticsearch_exporter_image_full }}"
     volumes: "{{ prometheus_elasticsearch_exporter_default_volumes + prometheus_elasticsearch_exporter_extra_volumes }}"
     dimensions: "{{ prometheus_elasticsearch_exporter_dimensions }}"
+  prometheus-rabbitmq-exporter:
+    container_name: "prometheus_rabbitmq_exporter"
+    group: "prometheus-rabbitmq-exporter"
+    enabled: "{{ enable_prometheus_rabbitmq_exporter | bool }}"
+    image: "{{ prometheus_rabbitmq_exporter_image_full }}"
+    environment:
+      RABBIT_URL: "{{ rpc_transport_url }}"
+      RABBIT_USER: "{{ rabbitmq_monitoring_user }}"
+      RABBIT_PASSWORD: "{{ rabbitmq_monitoring_password }}"
+      PUBLISH_PORT: "{{ prometheus_rabbitmq_exporter_port }}"
+      PUBLISH_ADDR: "{{ api_interface_address }}"
+      SKIP_QUEUES: "{{ prometheus_rabbitmq_exporter_skip_queues }}"
+      MAX_QUEUES: 100
+    volumes: "{{ prometheus_rabbitmq_exporter_default_volumes + prometheus_rabbitmq_exporter_extra_volumes }}"
+    dimensions: "{{ prometheus_rabbitmq_exporter_dimensions }}"
 
 ####################
 # Database
 ####################
 prometheus_mysql_exporter_database_user: "{% if use_preconfigured_databases | bool and use_common_mariadb_user | bool %}{{ database_user }}{% else %}prometheus{% endif %}"
+
+####################
+# RabbitMQ
+####################
+
+# A list of queues to skip monitoring.
+prometheus_rabbitmq_exporter_skip_queues: "^$"
 
 ####################
 # Docker
@@ -136,6 +158,10 @@ prometheus_elasticsearch_exporter_image: "{{ docker_registry ~ '/' if docker_reg
 prometheus_elasticsearch_exporter_tag: "{{ prometheus_tag }}"
 prometheus_elasticsearch_exporter_image_full: "{{ prometheus_elasticsearch_exporter_image }}:{{ prometheus_elasticsearch_exporter_tag }}"
 
+prometheus_rabbitmq_exporter_image: "{{ docker_registry ~ '/' if docker_registry else '' }}{{ docker_namespace }}/{{ kolla_base_distro }}-{{ prometheus_install_type }}-prometheus-rabbitmq-exporter"
+prometheus_rabbitmq_exporter_tag: "{{ prometheus_tag }}"
+prometheus_rabbitmq_exporter_image_full: "{{ prometheus_rabbitmq_exporter_image }}:{{ prometheus_rabbitmq_exporter_tag }}"
+
 prometheus_server_dimensions: "{{ default_container_dimensions }}"
 prometheus_haproxy_exporter_dimensions: "{{ default_container_dimensions }}"
 prometheus_mysqld_exporter_dimensions: "{{ default_container_dimensions }}"
@@ -145,6 +171,7 @@ prometheus_cadvisor_dimensions: "{{ default_container_dimensions }}"
 prometheus_alertmanager_dimensions: "{{ default_container_dimensions }}"
 prometheus_openstack_exporter_dimensions: "{{ default_container_dimensions }}"
 prometheus_elasticsearch_exporter_dimensions: "{{ default_container_dimensions }}"
+prometheus_rabbitmq_exporter_dimensions: "{{ default_container_dimensions }}"
 
 prometheus_server_default_volumes:
   - "{{ node_config_directory }}/prometheus-server/:{{ container_config_directory }}/:ro"
@@ -193,6 +220,9 @@ prometheus_elasticsearch_exporter_default_volumes:
   - "{{ node_config_directory }}/prometheus-elasticsearch-exporter/:{{ container_config_directory }}/:ro"
   - "/etc/localtime:/etc/localtime:ro"
   - "kolla_logs:/var/log/kolla/"
+prometheus_rabbitmq_exporter_default_volumes:
+  - "{{ node_config_directory }}/prometheus-rabbitmq-exporter/:{{ container_config_directory }}/:ro"
+  - "/etc/localtime:/etc/localtime:ro"
 
 prometheus_extra_volumes: "{{ default_extra_volumes }}"
 prometheus_server_extra_volumes: "{{ prometheus_extra_volumes }}"
@@ -204,3 +234,5 @@ prometheus_cadvisor_extra_volumes: "{{ prometheus_extra_volumes }}"
 prometheus_alertmanager_extra_volumes: "{{ prometheus_extra_volumes }}"
 prometheus_openstack_exporter_extra_volumes: "{{ prometheus_extra_volumes }}"
 prometheus_elasticsearch_exporter_extra_volumes: "{{ prometheus_extra_volumes }}"
+prometheus_rabbitmq_exporter_extra_volumes: "{{ prometheus_extra_volumes }}"
+

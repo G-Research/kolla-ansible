@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Deploys a Prometheus exporter for RabbitMQ for monitoring statistics such as
+    queue lengths.

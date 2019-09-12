@@ -784,3 +784,7 @@ control
 
 [masakari-monitors:children]
 compute
+
+[prometheus-rabbitmq-exporter:children]
+rabbitmq
+
